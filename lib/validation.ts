@@ -52,3 +52,11 @@ export const intakeDataSchema = z.object({
   goalsAndAssessment: goalsAndAssessmentSchema,
   waiverAccepted: z.literal(true, { message: "You must acknowledge the waiver to continue" }),
 });
+
+// Collected once before a user's first checkout — see app/api/checkout/route.ts.
+// Permissive on formatting (spaces/dashes/parens) since normalizePhone (lib/phone.ts)
+// strips that before storing/comparing; this just rejects obvious garbage.
+export const phoneSchema = z
+  .string()
+  .trim()
+  .regex(/^\+?[0-9()\-.\s]{7,20}$/, "Enter a valid phone number");

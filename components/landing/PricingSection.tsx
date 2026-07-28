@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Check } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { PhoneNumberModal } from "@/components/landing/PhoneNumberModal";
 import type { SubscriptionTier } from "@/lib/subscriptions";
 
 const TIERS: {
@@ -43,15 +44,16 @@ const TIERS: {
 export function PricingSection() {
   const [loadingTier, setLoadingTier] = useState<SubscriptionTier | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [phonePromptTier, setPhonePromptTier] = useState<SubscriptionTier | null>(null);
 
-  async function startCheckout(tier: SubscriptionTier) {
+  async function startCheckout(tier: SubscriptionTier, phone?: string) {
     setError(null);
     setLoadingTier(tier);
     try {
       const res = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tier }),
+        body: JSON.stringify({ tier, phone }),
       });
       if (res.status === 401) {
         window.location.assign("/login?next=/%23pricing");
@@ -59,6 +61,11 @@ export function PricingSection() {
       }
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
+        if (body.error === "phone_required") {
+          setPhonePromptTier(tier);
+          setLoadingTier(null);
+          return;
+        }
         throw new Error(body.error ?? "Couldn't start checkout. Please try again.");
       }
       const { url } = (await res.json()) as { url: string };
@@ -67,6 +74,13 @@ export function PricingSection() {
       setError(err instanceof Error ? err.message : "Something went wrong");
       setLoadingTier(null);
     }
+  }
+
+  function handlePhoneSubmit(phone: string) {
+    if (!phonePromptTier) return;
+    const tier = phonePromptTier;
+    setPhonePromptTier(null);
+    startCheckout(tier, phone);
   }
 
   return (
@@ -125,6 +139,13 @@ export function PricingSection() {
         )}
         <p className="text-xs text-zinc-500 mt-8 text-center">No refunds. Cancel anytime going forward.</p>
       </div>
+      {phonePromptTier && (
+        <PhoneNumberModal
+          submitting={loadingTier === phonePromptTier}
+          onSubmit={handlePhoneSubmit}
+          onCancel={() => setPhonePromptTier(null)}
+        />
+      )}
     </section>
   );
 }

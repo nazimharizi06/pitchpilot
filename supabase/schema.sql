@@ -56,3 +56,31 @@ create table public.favorite_drills (
 alter table public.favorite_drills enable row level security;
 create policy "Users manage their own favorites" on public.favorite_drills
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- Collected once, before a user's first checkout attempt (see app/api/checkout/route.ts).
+-- Immutable after insert — no insert/update policy for the browser client — since it
+-- exists purely as a free-trial-abuse dedup signal, not a user-editable profile field.
+create table public.user_phones (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  phone text not null,
+  created_at timestamptz not null default now()
+);
+alter table public.user_phones enable row level security;
+create policy "Users can read their own phone" on public.user_phones
+  for select using (auth.uid() = user_id);
+
+-- Append-only ledger of every completed checkout's email + phone. No policies at all —
+-- service-role only (same posture as `subscriptions` being webhook-authority data) — so
+-- it's never exposed to the browser client. Outlives the `subscriptions` row and the
+-- Supabase account itself, so a deleted-and-recreated account, or a brand-new account
+-- with a different email but the same phone, still gets caught before another free trial.
+create table public.trial_usage (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users(id) on delete set null,
+  email text not null,
+  phone text not null,
+  used_at timestamptz not null default now()
+);
+alter table public.trial_usage enable row level security;
+create index trial_usage_email_idx on public.trial_usage (email);
+create index trial_usage_phone_idx on public.trial_usage (phone);
