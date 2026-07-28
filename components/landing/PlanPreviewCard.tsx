@@ -6,7 +6,7 @@ export function PlanPreviewCard({ session }: { session: PlanSession }) {
   const drills = session.drills.map((entry) => drillsById[entry.drillId]).filter(Boolean);
 
   return (
-    <div className="w-full max-w-sm rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-2xl shadow-emerald-950/10 overflow-hidden">
+    <div className="w-full max-w-sm rounded-2xl border border-zinc-800 bg-zinc-900 shadow-2xl shadow-emerald-950/30 overflow-hidden">
       <div className="bg-gradient-to-br from-emerald-500 to-emerald-700 px-5 py-4 text-white">
         <p className="text-xs font-medium uppercase tracking-wide text-emerald-100">Day {session.day}</p>
         <p className="text-lg font-semibold">{session.theme}</p>
@@ -16,12 +16,10 @@ export function PlanPreviewCard({ session }: { session: PlanSession }) {
         {drills.slice(0, 5).map((d) => (
           <div key={d.id} className="flex items-center gap-2.5 text-sm">
             <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
-            <span className="text-zinc-700 dark:text-zinc-300 truncate">{d.name}</span>
+            <span className="text-zinc-300 truncate">{d.name}</span>
           </div>
         ))}
-        {drills.length > 5 && (
-          <p className="text-xs text-zinc-400 dark:text-zinc-500 pl-6.5">+{drills.length - 5} more</p>
-        )}
+        {drills.length > 5 && <p className="text-xs text-zinc-500 pl-6.5">+{drills.length - 5} more</p>}
       </div>
     </div>
   );

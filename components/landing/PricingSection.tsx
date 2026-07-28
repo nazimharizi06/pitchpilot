@@ -70,59 +70,61 @@ export function PricingSection() {
   }
 
   return (
-    <section id="pricing" className="max-w-6xl mx-auto px-6 py-24 border-t border-zinc-200 dark:border-zinc-800">
-      <div className="text-center mb-14">
-        <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400 mb-2">Pricing</p>
-        <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50 mb-3">
-          Start free. Stay if it&apos;s working.
-        </h2>
-        <p className="text-zinc-600 dark:text-zinc-400">7-day free trial on every plan. Cancel anytime going forward.</p>
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 items-start">
-        {TIERS.map((tier) => (
-          <div
-            key={tier.id}
-            className={`relative rounded-2xl p-6 flex flex-col ${
-              tier.popular
-                ? "border-2 border-emerald-500 shadow-xl shadow-emerald-600/10 sm:-translate-y-2"
-                : "border border-zinc-200 dark:border-zinc-800"
-            }`}
-          >
-            {tier.popular && (
-              <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-emerald-600 text-white text-xs font-semibold px-3 py-1">
-                Most popular
-              </span>
-            )}
-            <h3 className="font-semibold text-zinc-900 dark:text-zinc-50 mb-1">{tier.name}</h3>
-            <p className="text-3xl font-semibold text-zinc-900 dark:text-zinc-50 mb-5">
-              {tier.price}
-              <span className="text-sm font-normal text-zinc-500 dark:text-zinc-400">/mo</span>
-            </p>
-            <ul className="flex flex-col gap-3 mb-6 flex-1">
-              {tier.features.map((f) => (
-                <li key={f} className="flex items-start gap-2 text-sm text-zinc-600 dark:text-zinc-400">
-                  <Check className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
-                  {f}
-                </li>
-              ))}
-            </ul>
-            <Button
-              variant={tier.popular ? "primary" : "secondary"}
-              className="w-full"
-              disabled={loadingTier !== null}
-              onClick={() => startCheckout(tier.id)}
+    <section id="pricing" className="bg-zinc-950 px-6 py-24">
+      <div className="max-w-6xl mx-auto">
+        <div className="text-center mb-14">
+          <p className="text-sm font-medium text-emerald-400 mb-2">Pricing</p>
+          <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight text-white mb-3">
+            Start free. Stay if it&apos;s working.
+          </h2>
+          <p className="text-zinc-400">7-day free trial on every plan. Cancel anytime going forward.</p>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 items-start">
+          {TIERS.map((tier) => (
+            <div
+              key={tier.id}
+              className={`relative rounded-2xl p-6 flex flex-col bg-zinc-900/40 ${
+                tier.popular
+                  ? "border-2 border-emerald-500 shadow-xl shadow-emerald-950/40 sm:-translate-y-2"
+                  : "border border-zinc-800"
+              }`}
             >
-              {loadingTier === tier.id ? "Redirecting..." : "Start free trial"}
-            </Button>
-          </div>
-        ))}
+              {tier.popular && (
+                <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-emerald-600 text-white text-xs font-semibold px-3 py-1">
+                  Most popular
+                </span>
+              )}
+              <h3 className="font-semibold text-white mb-1">{tier.name}</h3>
+              <p className="text-3xl font-semibold text-white mb-5">
+                {tier.price}
+                <span className="text-sm font-normal text-zinc-400">/mo</span>
+              </p>
+              <ul className="flex flex-col gap-3 mb-6 flex-1">
+                {tier.features.map((f) => (
+                  <li key={f} className="flex items-start gap-2 text-sm text-zinc-400">
+                    <Check className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
+                    {f}
+                  </li>
+                ))}
+              </ul>
+              <Button
+                variant={tier.popular ? "primary" : "outlineDark"}
+                className="w-full"
+                disabled={loadingTier !== null}
+                onClick={() => startCheckout(tier.id)}
+              >
+                {loadingTier === tier.id ? "Redirecting..." : "Start free trial"}
+              </Button>
+            </div>
+          ))}
+        </div>
+        {error && (
+          <p className="mt-4 text-sm text-center text-red-400" role="alert">
+            {error}
+          </p>
+        )}
+        <p className="text-xs text-zinc-500 mt-8 text-center">No refunds. Cancel anytime going forward.</p>
       </div>
-      {error && (
-        <p className="mt-4 text-sm text-center text-red-600 dark:text-red-400" role="alert">
-          {error}
-        </p>
-      )}
-      <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-8 text-center">No refunds. Cancel anytime going forward.</p>
     </section>
   );
 }

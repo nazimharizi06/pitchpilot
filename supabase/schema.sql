@@ -21,3 +21,15 @@ alter table public.subscriptions enable row level security;
 create policy "Users can read their own subscription"
   on public.subscriptions for select
   using (auth.uid() = user_id);
+
+-- Cross-device magic-link login handoff (see lib/loginTickets.ts). Tickets are
+-- single-use and short-lived; no client ever reads/writes this table directly —
+-- only the service-role client from our own server code does.
+create table public.login_tickets (
+  id uuid primary key default gen_random_uuid(),
+  email text not null,
+  status text not null default 'pending' check (status in ('pending', 'completed')),
+  created_at timestamptz not null default now()
+);
+
+alter table public.login_tickets enable row level security;

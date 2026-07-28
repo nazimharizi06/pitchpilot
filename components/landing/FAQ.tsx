@@ -25,26 +25,26 @@ const FAQS = [
 
 export function FAQ() {
   return (
-    <section id="faq" className="max-w-3xl mx-auto px-6 py-24 border-t border-zinc-200 dark:border-zinc-800">
-      <div className="text-center mb-10">
-        <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400 mb-2">FAQ</p>
-        <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
-          Questions parents ask
-        </h2>
-      </div>
-      <div className="flex flex-col gap-3">
-        {FAQS.map((item) => (
-          <details
-            key={item.q}
-            className="group rounded-xl border border-zinc-200 dark:border-zinc-800 px-5 py-4 open:bg-zinc-50 dark:open:bg-zinc-900/50"
-          >
-            <summary className="flex items-center justify-between gap-3 cursor-pointer list-none font-medium text-zinc-900 dark:text-zinc-50">
-              {item.q}
-              <ChevronDown className="h-4 w-4 text-zinc-400 shrink-0 transition-transform group-open:rotate-180" />
-            </summary>
-            <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-3">{item.a}</p>
-          </details>
-        ))}
+    <section id="faq" className="bg-zinc-900/30 border-y border-zinc-800 px-6 py-24">
+      <div className="max-w-3xl mx-auto">
+        <div className="text-center mb-10">
+          <p className="text-sm font-medium text-emerald-400 mb-2">FAQ</p>
+          <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight text-white">Questions parents ask</h2>
+        </div>
+        <div className="flex flex-col gap-3">
+          {FAQS.map((item) => (
+            <details
+              key={item.q}
+              className="group rounded-xl border border-zinc-800 px-5 py-4 open:bg-zinc-900/60"
+            >
+              <summary className="flex items-center justify-between gap-3 cursor-pointer list-none font-medium text-white">
+                {item.q}
+                <ChevronDown className="h-4 w-4 text-zinc-500 shrink-0 transition-transform group-open:rotate-180" />
+              </summary>
+              <p className="text-sm text-zinc-400 mt-3">{item.a}</p>
+            </details>
+          ))}
+        </div>
       </div>
     </section>
   );

@@ -36,12 +36,13 @@ const DEMO_INTAKE: IntakeData = {
 
 export default async function Home() {
   const demoPlan = await generatePlan(DEMO_INTAKE);
+  const weekThemes = Array.from(new Set(demoPlan.sessions.map((s) => s.theme)));
 
   return (
     <>
-      <Header />
-      <main>
-        <Hero previewSession={demoPlan.sessions[0]} />
+      <Header dark />
+      <main className="bg-zinc-950">
+        <Hero previewSession={demoPlan.sessions[0]} weekThemes={weekThemes} />
         <HowItWorks />
         <GoalsGrid />
         <PricingSection />

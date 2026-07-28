@@ -7,7 +7,7 @@ import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
 
-export function UserMenu() {
+export function UserMenu({ dark = false }: { dark?: boolean }) {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [loaded, setLoaded] = useState(false);
@@ -40,7 +40,14 @@ export function UserMenu() {
 
   if (!user) {
     return (
-      <Link href="/login" className="text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100">
+      <Link
+        href="/login"
+        className={
+          dark
+            ? "text-sm font-medium text-zinc-400 hover:text-white transition-colors"
+            : "text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
+        }
+      >
         Log in
       </Link>
     );
@@ -48,8 +55,20 @@ export function UserMenu() {
 
   return (
     <div className="flex items-center gap-3">
-      <span className="hidden sm:block text-sm text-zinc-500 dark:text-zinc-400 truncate max-w-[12rem]">{user.email}</span>
-      <Button variant="ghost" className="text-sm px-3 py-1.5" onClick={handleLogout}>
+      <span
+        className={
+          dark
+            ? "hidden sm:block text-sm text-zinc-400 truncate max-w-[12rem]"
+            : "hidden sm:block text-sm text-zinc-500 dark:text-zinc-400 truncate max-w-[12rem]"
+        }
+      >
+        {user.email}
+      </span>
+      <Button
+        variant={dark ? "outlineDark" : "ghost"}
+        className="text-sm px-3 py-1.5"
+        onClick={handleLogout}
+      >
         Log out
       </Button>
     </div>
