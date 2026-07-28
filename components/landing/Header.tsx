@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
+import { UserMenu } from "@/components/auth/UserMenu";
 
 export function Header() {
   return (
@@ -18,6 +19,9 @@ export function Header() {
           <a href="#goals" className="hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">
             Training areas
           </a>
+          <Link href="/drills" className="hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">
+            Drill library
+          </Link>
           <a href="#pricing" className="hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">
             Pricing
           </a>
@@ -25,9 +29,12 @@ export function Header() {
             FAQ
           </a>
         </nav>
-        <Link href="/intake">
-          <Button className="text-sm px-4 py-2">Start free trial</Button>
-        </Link>
+        <div className="flex items-center gap-4">
+          <UserMenu />
+          <Link href="/intake">
+            <Button className="text-sm px-4 py-2">Start free trial</Button>
+          </Link>
+        </div>
       </div>
     </header>
   );

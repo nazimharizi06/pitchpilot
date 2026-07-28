@@ -1,6 +1,6 @@
 import type { Level } from "@/lib/types";
-import { SKILL_CATEGORY_LABELS } from "@/lib/types";
 import type { AIProvider, ExplainSessionInput, WeightedGoal } from "@/lib/ai/provider";
+import { pickDrillsByUsage, summarizeGoalWeighting } from "@/lib/ai/heuristics";
 
 // Lower self-rating = higher priority weight, so weaker skills get scheduled
 // more often across the week. This is the one place "AI judgment" about
@@ -13,7 +13,7 @@ const LEVEL_WEIGHT: Record<Level, number> = {
 };
 
 export const mockProvider: AIProvider = {
-  weightGoals(goals, selfRatings) {
+  async weightGoals(goals, selfRatings) {
     return goals
       .map((goal) => ({
         goal,
@@ -22,16 +22,11 @@ export const mockProvider: AIProvider = {
       .sort((a, b) => b.weight - a.weight);
   },
 
-  pickDrills(candidates, usedCounts, count) {
-    const ranked = [...candidates].sort((a, b) => {
-      const usageDiff = (usedCounts.get(a.id) ?? 0) - (usedCounts.get(b.id) ?? 0);
-      if (usageDiff !== 0) return usageDiff;
-      return candidates.indexOf(a) - candidates.indexOf(b);
-    });
-    return ranked.slice(0, count);
+  async pickDrills(candidates, usedCounts, count) {
+    return pickDrillsByUsage(candidates, usedCounts, count);
   },
 
-  explainSession({ themeLabel, drills, profile, blendedThemeLabels }: ExplainSessionInput) {
+  async explainSession({ themeLabel, drills, profile, blendedThemeLabels }: ExplainSessionInput) {
     const ratingNote = profile.playing_level ? ` at your ${profile.playing_level} level` : "";
     const drillNames = drills.map((d) => d.name).join(", ");
     const blendNote =
@@ -45,8 +40,7 @@ export const mockProvider: AIProvider = {
     );
   },
 
-  summarizeWeighting(weighted: WeightedGoal[]) {
-    const parts = weighted.map((w) => `${SKILL_CATEGORY_LABELS[w.goal]} (weight ${w.weight})`);
-    return `Goal priority this week, weaker self-ratings weighted higher: ${parts.join(", ")}.`;
+  async summarizeWeighting(weighted: WeightedGoal[]) {
+    return summarizeGoalWeighting(weighted);
   },
 };

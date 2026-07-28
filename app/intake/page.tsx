@@ -79,6 +79,10 @@ export default function IntakePage() {
       waiverAccepted,
     };
 
+    // Save now (not just on success) so /plan can pick this up and finish
+    // the job once the user signs up — see the not-signed-in/not-Pro branches below.
+    saveIntake(intake);
+
     setSubmitting(true);
     try {
       const res = await fetch("/api/generate-plan", {
@@ -86,12 +90,20 @@ export default function IntakePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(intake),
       });
+
+      if (res.status === 401) {
+        window.location.assign("/login?next=/%23pricing");
+        return;
+      }
+      if (res.status === 403) {
+        window.location.assign("/#pricing");
+        return;
+      }
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error ?? "Couldn't generate your plan. Please try again.");
       }
       const plan = (await res.json()) as Plan;
-      saveIntake(intake);
       savePlan(plan);
       router.push("/plan");
     } catch (err) {

@@ -1,26 +1,38 @@
-import Link from "next/link";
+"use client";
+
+import { useState } from "react";
 import { Check } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import type { SubscriptionTier } from "@/lib/subscriptions";
 
-const TIERS = [
+const TIERS: {
+  id: SubscriptionTier;
+  name: string;
+  price: string;
+  popular: boolean;
+  features: string[];
+}[] = [
   {
+    id: "base",
     name: "Base",
     price: "$10",
     popular: false,
-    features: ["Full intake & AI-generated plans", "Full drill library", "Manual re-check & level-ups", "Email + text reminders"],
+    features: ["Browse the full drill library", "Filter by skill, level, equipment, and space"],
   },
   {
+    id: "pro",
     name: "Pro",
     price: "$20",
     popular: true,
     features: [
       "Everything in Base",
+      "AI-generated weekly training plans",
       "Richer AI explanations for every session",
-      "Deeper progress tracking",
-      "Multiple simultaneous training focuses",
+      "Manual re-check & level-ups",
     ],
   },
   {
+    id: "premium",
     name: "Premium",
     price: "$50",
     popular: false,
@@ -29,6 +41,34 @@ const TIERS = [
 ];
 
 export function PricingSection() {
+  const [loadingTier, setLoadingTier] = useState<SubscriptionTier | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function startCheckout(tier: SubscriptionTier) {
+    setError(null);
+    setLoadingTier(tier);
+    try {
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tier }),
+      });
+      if (res.status === 401) {
+        window.location.assign("/login?next=/%23pricing");
+        return;
+      }
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error ?? "Couldn't start checkout. Please try again.");
+      }
+      const { url } = (await res.json()) as { url: string };
+      window.location.assign(url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
+      setLoadingTier(null);
+    }
+  }
+
   return (
     <section id="pricing" className="max-w-6xl mx-auto px-6 py-24 border-t border-zinc-200 dark:border-zinc-800">
       <div className="text-center mb-14">
@@ -41,7 +81,7 @@ export function PricingSection() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 items-start">
         {TIERS.map((tier) => (
           <div
-            key={tier.name}
+            key={tier.id}
             className={`relative rounded-2xl p-6 flex flex-col ${
               tier.popular
                 ? "border-2 border-emerald-500 shadow-xl shadow-emerald-600/10 sm:-translate-y-2"
@@ -66,14 +106,22 @@ export function PricingSection() {
                 </li>
               ))}
             </ul>
-            <Link href="/intake">
-              <Button variant={tier.popular ? "primary" : "secondary"} className="w-full">
-                Start free trial
-              </Button>
-            </Link>
+            <Button
+              variant={tier.popular ? "primary" : "secondary"}
+              className="w-full"
+              disabled={loadingTier !== null}
+              onClick={() => startCheckout(tier.id)}
+            >
+              {loadingTier === tier.id ? "Redirecting..." : "Start free trial"}
+            </Button>
           </div>
         ))}
       </div>
+      {error && (
+        <p className="mt-4 text-sm text-center text-red-600 dark:text-red-400" role="alert">
+          {error}
+        </p>
+      )}
       <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-8 text-center">No refunds. Cancel anytime going forward.</p>
     </section>
   );

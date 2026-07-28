@@ -34,8 +34,8 @@ const DEMO_INTAKE: IntakeData = {
   waiverAccepted: true,
 };
 
-export default function Home() {
-  const demoPlan = generatePlan(DEMO_INTAKE);
+export default async function Home() {
+  const demoPlan = await generatePlan(DEMO_INTAKE);
 
   return (
     <>

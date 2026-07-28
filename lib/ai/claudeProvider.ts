@@ -1,34 +1,94 @@
-// STUB — not implemented. Wire this up once there's a real ANTHROPIC_API_KEY.
-//
-// This should implement the same `AIProvider` interface as mockProvider.ts
-// (see lib/ai/provider.ts) so swapping it in is a one-line change wherever
-// generatePlan.ts picks a provider — no other file should need to change.
-//
-// Rough shape once implemented:
-//   import Anthropic from "@anthropic-ai/sdk";
-//   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-//   - weightGoals / pickDrills / explainSession would send the candidate
-//     drills + user profile as structured input and ask Claude to return
-//     a structured decision (tool use / JSON mode), replacing the mock's
-//     fixed heuristics with real judgment — including the doc's open
-//     AI-judgment questions (how gender factors in, whether to repeat
-//     drills within a week, etc).
-//
-// See README.md "Swapping in real services" for the full checklist.
+import Anthropic from "@anthropic-ai/sdk";
+import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
+import { z } from "zod";
+import type { AIProvider, ExplainSessionInput } from "@/lib/ai/provider";
+import { pickDrillsByUsage, summarizeGoalWeighting } from "@/lib/ai/heuristics";
 
-import type { AIProvider } from "@/lib/ai/provider";
+// Real AI-judgment implementation of the AIProvider interface (lib/ai/provider.ts).
+// Only weightGoals and explainSession call the model — those are the two jobs
+// that need actual judgment (balancing goals against each other, writing a
+// natural-language explanation). pickDrills and summarizeWeighting are
+// deterministic bookkeeping (anti-repetition, restating already-decided
+// weights) shared with mockProvider via lib/ai/heuristics.ts.
+
+const MODEL = "claude-opus-5";
+
+// Constructed lazily so importing this module doesn't require an API key —
+// route.ts only calls these methods when ANTHROPIC_API_KEY is actually set.
+let _client: Anthropic | null = null;
+function getClient(): Anthropic {
+  return (_client ??= new Anthropic());
+}
+
+const weightedGoalsSchema = z.object({
+  weights: z.array(
+    z.object({
+      goal: z.enum(["ball_control", "dribbling", "passing", "shooting", "speed_agility", "endurance", "weak_foot"]),
+      weight: z.number().int().min(1).max(3),
+    })
+  ),
+});
 
 export const claudeProvider: AIProvider = {
-  weightGoals() {
-    throw new Error("claudeProvider is not implemented yet — see lib/ai/claudeProvider.ts");
+  async weightGoals(goals, selfRatings) {
+    const response = await getClient().messages.parse({
+      model: MODEL,
+      max_tokens: 1024,
+      thinking: { type: "disabled" },
+      output_config: { effort: "low", format: zodOutputFormat(weightedGoalsSchema) },
+      system:
+        "You are a youth soccer coach's assistant balancing a training week across a player's goals. " +
+        "For each goal, assign a weekly emphasis weight of 1-3: weight 3 for goals rated beginner " +
+        "(they need the most attention), weight 2 for intermediate, weight 1 for advanced. " +
+        "Return every goal from the input exactly once.",
+      messages: [
+        {
+          role: "user",
+          content: JSON.stringify({ goals, self_ratings: selfRatings }),
+        },
+      ],
+    });
+
+    const weights = response.parsed_output?.weights;
+    if (!weights) throw new Error("Claude did not return a valid goal-weighting response");
+
+    return [...weights].sort((a, b) => b.weight - a.weight);
   },
-  pickDrills() {
-    throw new Error("claudeProvider is not implemented yet — see lib/ai/claudeProvider.ts");
+
+  async pickDrills(candidates, usedCounts, count) {
+    return pickDrillsByUsage(candidates, usedCounts, count);
   },
-  explainSession() {
-    throw new Error("claudeProvider is not implemented yet — see lib/ai/claudeProvider.ts");
+
+  async explainSession({ themeLabel, level, drills, profile, blendedThemeLabels }: ExplainSessionInput) {
+    const response = await getClient().messages.create({
+      model: MODEL,
+      max_tokens: 400,
+      thinking: { type: "disabled" },
+      output_config: { effort: "low" },
+      system:
+        "You are a youth soccer coach writing a short, encouraging note introducing today's training " +
+        "session to a player. Two to three sentences. Mention the session's theme and reference the " +
+        "specific drills by name. Plain text only, no markdown.",
+      messages: [
+        {
+          role: "user",
+          content: JSON.stringify({
+            theme: themeLabel,
+            goal_level: level,
+            player_playing_level: profile.playing_level,
+            drills: drills.map((d) => d.name),
+            blended_with: blendedThemeLabels,
+          }),
+        },
+      ],
+    });
+
+    const textBlock = response.content.find((block) => block.type === "text");
+    if (!textBlock || textBlock.type !== "text") throw new Error("Claude did not return an explanation");
+    return textBlock.text;
   },
-  summarizeWeighting() {
-    throw new Error("claudeProvider is not implemented yet — see lib/ai/claudeProvider.ts");
+
+  async summarizeWeighting(weighted) {
+    return summarizeGoalWeighting(weighted);
   },
 };

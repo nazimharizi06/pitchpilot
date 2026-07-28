@@ -22,8 +22,8 @@ export interface ExplainSessionInput {
  * is where a real Claude API call would plug in behind this exact interface.
  */
 export interface AIProvider {
-  weightGoals(goals: SkillCategory[], selfRatings: GoalsAndAssessment["self_ratings"]): WeightedGoal[];
-  pickDrills(candidates: Drill[], usedCounts: Map<string, number>, count: number): Drill[];
-  explainSession(input: ExplainSessionInput): string;
-  summarizeWeighting(weighted: WeightedGoal[]): string;
+  weightGoals(goals: SkillCategory[], selfRatings: GoalsAndAssessment["self_ratings"]): Promise<WeightedGoal[]>;
+  pickDrills(candidates: Drill[], usedCounts: Map<string, number>, count: number): Promise<Drill[]>;
+  explainSession(input: ExplainSessionInput): Promise<string>;
+  summarizeWeighting(weighted: WeightedGoal[]): Promise<string>;
 }

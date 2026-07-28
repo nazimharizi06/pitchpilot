@@ -41,11 +41,11 @@ function candidateBelongsToGoal(drill: Drill, goal: SkillCategory): boolean {
   return drill.categories.includes(goal);
 }
 
-export function generatePlan(intake: IntakeData, aiProvider: AIProvider = mockProvider): Plan {
+export async function generatePlan(intake: IntakeData, aiProvider: AIProvider = mockProvider): Promise<Plan> {
   const { profile, goalsAndAssessment } = intake;
   const { goals, self_ratings, days_per_week, space_available, equipment_available } = goalsAndAssessment;
 
-  const weighted = aiProvider.weightGoals(goals, self_ratings);
+  const weighted = await aiProvider.weightGoals(goals, self_ratings);
   const rotation = buildWeightedRotation(weighted);
   // Goal fill priority for topping up a session once the day's theme runs
   // out of matching drills — weightGoals' own ordering (weaker goals first).
@@ -73,7 +73,7 @@ export function generatePlan(intake: IntakeData, aiProvider: AIProvider = mockPr
     for (const goal of fillOrder) {
       const goalLevel = self_ratings[goal] ?? profile.playing_level;
       const { drills: pool } = candidatesForGoal(goal, goalLevel, equipment_available, space_available);
-      const ranked = aiProvider.pickDrills(pool, usedCounts, pool.length);
+      const ranked = await aiProvider.pickDrills(pool, usedCounts, pool.length);
       for (const d of ranked) {
         if (seenDrillIds.has(d.id)) continue;
         seenDrillIds.add(d.id);
@@ -92,7 +92,7 @@ export function generatePlan(intake: IntakeData, aiProvider: AIProvider = mockPr
       .filter((g) => g !== theme && assembled.main.some((d) => candidateBelongsToGoal(d, g)))
       .map((g) => SKILL_CATEGORY_LABELS[g]);
 
-    const explanation = aiProvider.explainSession({
+    const explanation = await aiProvider.explainSession({
       theme,
       themeLabel: SKILL_CATEGORY_LABELS[theme],
       level: themeLevel,
@@ -112,7 +112,7 @@ export function generatePlan(intake: IntakeData, aiProvider: AIProvider = mockPr
 
   return {
     sessions,
-    ai_weighting_notes: aiProvider.summarizeWeighting(weighted),
+    ai_weighting_notes: await aiProvider.summarizeWeighting(weighted),
     generated_at: new Date().toISOString(),
   };
 }

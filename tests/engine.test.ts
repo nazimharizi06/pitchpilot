@@ -128,8 +128,8 @@ describe("generatePlan (integration, real drill library)", () => {
     };
   }
 
-  it("generates one session per requested day, each within the time budget", () => {
-    const plan = generatePlan(buildIntake());
+  it("generates one session per requested day, each within the time budget", async () => {
+    const plan = await generatePlan(buildIntake());
     expect(plan.sessions).toHaveLength(2);
     for (const session of plan.sessions) {
       expect(session.target_duration_minutes).toBeGreaterThan(0);
@@ -138,14 +138,14 @@ describe("generatePlan (integration, real drill library)", () => {
     }
   });
 
-  it("blends standalone weak-foot drills with weak-foot-variant drills tagged in other categories", () => {
-    const plan = generatePlan(buildIntake());
+  it("blends standalone weak-foot drills with weak-foot-variant drills tagged in other categories", async () => {
+    const plan = await generatePlan(buildIntake());
     const weakFootSession = plan.sessions.find((s) => s.theme === "Weak Foot");
     expect(weakFootSession).toBeDefined();
   });
 
-  it("produces non-empty internal weighting notes for debugging", () => {
-    const plan = generatePlan(buildIntake());
+  it("produces non-empty internal weighting notes for debugging", async () => {
+    const plan = await generatePlan(buildIntake());
     expect(plan.ai_weighting_notes.length).toBeGreaterThan(0);
   });
 });
