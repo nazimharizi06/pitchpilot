@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const profileSchema = z.object({
   account_type: z.enum(["parent", "player"]),
-  age: z.coerce.number().int().min(5, "Age must be 5 or older").max(19, "Age must be 19 or younger"),
+  age: z.coerce.number().int().min(5, "Age must be 5 or older").max(100, "Enter a valid age"),
   height_in: z.coerce.number().positive("Enter a valid height"),
   weight_lb: z.coerce.number().positive("Enter a valid weight"),
   gender: z.enum(["male", "female", "other", "prefer_not_to_say"]),

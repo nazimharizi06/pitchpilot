@@ -33,7 +33,7 @@ export function ProfileStep({
           className={inputClass}
           value={value.age}
           min={5}
-          max={19}
+          max={100}
           onChange={(e) => set("age", Number(e.target.value))}
         />
       </Field>
