@@ -50,8 +50,9 @@ Each of these was deliberately left as a mock/stub so this runs today with no se
    Needs `ANTHROPIC_API_KEY`.
 2. **Supabase/Firebase** — replace `lib/storage.ts` with real reads/writes, add accounts (`account_type` already
    exists on `UserProfile`), and persist plans server-side instead of `localStorage`.
-3. **Stripe** — add the 7-day trial + Base/Pro/Premium subscription tiers described on the landing page
-   (currently informational only, no checkout wired up).
+3. **Stripe** — pricing is decided: Base $10/mo, Pro $20/mo, Premium $50/mo (shown on the landing page). Still
+   needed: Stripe products/prices for these three tiers, the 7-day-trial-then-charge flow, and checkout wired
+   up to real accounts (currently the landing page tiers are informational only, no checkout).
 4. **Twilio + Resend** — day-of and missed-session reminders.
 5. **Re-check flow** — a manually-triggered flow that updates `self_ratings`/`goals` (not profile info) and lets
    the app suggest level-ups, per the doc.

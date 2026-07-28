@@ -4,14 +4,17 @@ import { Button } from "@/components/ui/Button";
 const TIERS = [
   {
     name: "Base",
+    price: "$10",
     blurb: "Full intake, AI-generated plans, drill library, manual re-check, reminders.",
   },
   {
     name: "Pro",
+    price: "$20",
     blurb: "Richer AI explanations, deeper progress tracking, multiple simultaneous training focuses.",
   },
   {
     name: "Premium",
+    price: "$50",
     blurb: "Everything in Pro, plus drill demonstration videos.",
   },
 ];
@@ -59,7 +62,11 @@ export default function Home() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {TIERS.map((tier) => (
             <div key={tier.name} className="rounded-xl border border-zinc-200 dark:border-zinc-800 p-5">
-              <h3 className="font-semibold text-zinc-900 dark:text-zinc-50 mb-2">{tier.name}</h3>
+              <h3 className="font-semibold text-zinc-900 dark:text-zinc-50 mb-1">{tier.name}</h3>
+              <p className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50 mb-2">
+                {tier.price}
+                <span className="text-sm font-normal text-zinc-500 dark:text-zinc-400">/mo</span>
+              </p>
               <p className="text-sm text-zinc-600 dark:text-zinc-400">{tier.blurb}</p>
             </div>
           ))}
