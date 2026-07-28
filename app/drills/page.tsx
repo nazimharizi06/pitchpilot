@@ -23,35 +23,35 @@ export default async function DrillsPage() {
 
   return (
     <>
-      <Header />
-      <main className="max-w-4xl mx-auto px-6 py-12">
-        <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50 mb-1">Drill library</h1>
-        <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-8">
-          Every drill in PitchPilot&apos;s library, browsable anytime. Subscribe to Pro to turn these into a
-          personalized weekly plan.
-        </p>
+      <Header dark />
+      <main className="bg-zinc-950 min-h-screen">
+        <div className="max-w-4xl mx-auto px-6 py-12">
+          <h1 className="text-2xl font-semibold text-white mb-1">Drill library</h1>
+          <p className="text-sm text-zinc-400 mb-8">
+            Every drill in PitchPilot&apos;s library, browsable anytime. Subscribe to Pro to turn these into a
+            personalized weekly plan.
+          </p>
 
-        {SKILL_CATEGORIES.map((category) => {
-          const categoryDrills = drills.filter((d) => d.categories.includes(category));
-          if (categoryDrills.length === 0) return null;
-          return (
-            <section key={category} className="mb-10">
-              <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50 mb-4">
-                {SKILL_CATEGORY_LABELS[category]}
-              </h2>
-              <div className="flex flex-col gap-3">
-                {categoryDrills.map((drill) => (
-                  <div key={drill.id} className="relative">
-                    <div className="absolute top-3 right-3 z-10">
-                      <FavoriteButton drillId={drill.id} initialFavorited={favoritedIds.has(drill.id)} />
+          {SKILL_CATEGORIES.map((category) => {
+            const categoryDrills = drills.filter((d) => d.categories.includes(category));
+            if (categoryDrills.length === 0) return null;
+            return (
+              <section key={category} className="mb-10">
+                <h2 className="text-lg font-semibold text-white mb-4">{SKILL_CATEGORY_LABELS[category]}</h2>
+                <div className="flex flex-col gap-3">
+                  {categoryDrills.map((drill) => (
+                    <div key={drill.id} className="relative">
+                      <div className="absolute top-3 right-3 z-10">
+                        <FavoriteButton drillId={drill.id} initialFavorited={favoritedIds.has(drill.id)} />
+                      </div>
+                      <DrillCard drill={drill} repsDuration={drill.reps_duration} />
                     </div>
-                    <DrillCard drill={drill} repsDuration={drill.reps_duration} />
-                  </div>
-                ))}
-              </div>
-            </section>
-          );
-        })}
+                  ))}
+                </div>
+              </section>
+            );
+          })}
+        </div>
       </main>
     </>
   );

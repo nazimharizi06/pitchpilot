@@ -4,7 +4,7 @@ import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Header } from "@/components/landing/Header";
-import { Field, inputClass } from "@/components/ui/Field";
+import { Field, darkInputClass } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 
 // Google's official multicolor "G" mark — lucide-react doesn't ship brand icons.
@@ -80,62 +80,62 @@ function LoginForm() {
 
   return (
     <div className="flex flex-col gap-5">
-      <Button variant="secondary" className="w-full gap-2" type="button" onClick={handleGoogle}>
+      <Button variant="outlineDark" className="w-full gap-2" type="button" onClick={handleGoogle}>
         <GoogleIcon />
         Continue with Google
       </Button>
 
-      <div className="flex items-center gap-3 text-xs text-zinc-400 dark:text-zinc-500">
-        <div className="h-px flex-1 bg-zinc-200 dark:bg-zinc-800" />
+      <div className="flex items-center gap-3 text-xs text-zinc-500">
+        <div className="h-px flex-1 bg-zinc-800" />
         or
-        <div className="h-px flex-1 bg-zinc-200 dark:bg-zinc-800" />
+        <div className="h-px flex-1 bg-zinc-800" />
       </div>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <Field label="Email">
+        <Field dark label="Email">
           <input
             type="email"
             required
-            className={inputClass}
+            className={darkInputClass}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="you@example.com"
           />
         </Field>
-        <Field label="Password">
+        <Field dark label="Password">
           <input
             type="password"
             required
             minLength={6}
-            className={inputClass}
+            className={darkInputClass}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="••••••••"
           />
         </Field>
         {error && (
-          <p className="text-sm text-red-600 dark:text-red-400" role="alert">
+          <p className="text-sm text-red-400" role="alert">
             {error}
           </p>
         )}
-        {message && <p className="text-sm text-emerald-600 dark:text-emerald-400">{message}</p>}
+        {message && <p className="text-sm text-emerald-400">{message}</p>}
         <Button type="submit" disabled={submitting}>
           {submitting ? "Please wait..." : mode === "signin" ? "Sign in" : "Create account"}
         </Button>
       </form>
 
-      <p className="text-sm text-center text-zinc-500 dark:text-zinc-400">
+      <p className="text-sm text-center text-zinc-400">
         {mode === "signin" ? (
           <>
             Don&apos;t have an account?{" "}
-            <button type="button" className="underline text-zinc-900 dark:text-zinc-100" onClick={() => switchMode("signup")}>
+            <button type="button" className="underline text-white" onClick={() => switchMode("signup")}>
               Sign up
             </button>
           </>
         ) : (
           <>
             Already have an account?{" "}
-            <button type="button" className="underline text-zinc-900 dark:text-zinc-100" onClick={() => switchMode("signin")}>
+            <button type="button" className="underline text-white" onClick={() => switchMode("signin")}>
               Sign in
             </button>
           </>
@@ -148,13 +148,15 @@ function LoginForm() {
 export default function LoginPage() {
   return (
     <>
-      <Header />
-      <main className="max-w-sm mx-auto px-6 py-16">
-        <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50 mb-1">Log in</h1>
-        <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-8">Sign in to manage your plan and subscription.</p>
-        <Suspense fallback={null}>
-          <LoginForm />
-        </Suspense>
+      <Header dark />
+      <main className="bg-zinc-950 min-h-screen">
+        <div className="max-w-sm mx-auto px-6 py-16">
+          <h1 className="text-2xl font-semibold text-white mb-1">Log in</h1>
+          <p className="text-sm text-zinc-400 mb-8">Sign in to manage your plan and subscription.</p>
+          <Suspense fallback={null}>
+            <LoginForm />
+          </Suspense>
+        </div>
       </main>
     </>
   );
