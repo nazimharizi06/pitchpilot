@@ -17,6 +17,8 @@ import { drillsById } from "@/lib/data/drills";
 import { Button } from "@/components/ui/Button";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { DrillChecklistItem } from "@/components/dashboard/DrillChecklistItem";
+import { LoadingScreen } from "@/components/dashboard/LoadingScreen";
+import { PlanGeneratingScreen } from "@/components/dashboard/PlanGeneratingScreen";
 import type { Drill, PlanDrillEntry } from "@/lib/types";
 
 // Delays between retries when generating from a saved-but-not-yet-generated
@@ -137,7 +139,7 @@ export default function MyPlanPage() {
   }
 
   if (generating) {
-    return <StatusMessage>Finishing your subscription and building your plan...</StatusMessage>;
+    return <PlanGeneratingScreen />;
   }
 
   if (generateError) {
@@ -157,7 +159,7 @@ export default function MyPlanPage() {
   }
 
   if (!loaded || !state) {
-    return <StatusMessage>Loading your plan...</StatusMessage>;
+    return <LoadingScreen message="Loading your plan..." />;
   }
 
   const { plan, progress } = state;
@@ -270,8 +272,4 @@ export default function MyPlanPage() {
       )}
     </div>
   );
-}
-
-function StatusMessage({ children }: { children: React.ReactNode }) {
-  return <div className="px-6 py-12 text-sm text-zinc-400">{children}</div>;
 }

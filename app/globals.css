@@ -43,3 +43,20 @@ body {
 .animate-gentle-float {
   animation: gentle-float 6s ease-in-out infinite;
 }
+
+/* Indeterminate progress bar — conveys "working", not a real measured
+   percentage (we don't have granular progress telemetry from plan
+   generation), so this animates continuously rather than sitting at a
+   specific number. */
+@keyframes indeterminate-bar {
+  0% {
+    left: -33%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+.animate-indeterminate-bar {
+  animation: indeterminate-bar 1.6s ease-in-out infinite;
+}

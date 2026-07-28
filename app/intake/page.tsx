@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Sparkles, Repeat2, ShieldCheck } from "lucide-react";
 import { Header } from "@/components/landing/Header";
 import { StepIndicator } from "@/components/intake/StepIndicator";
+import { TipCard } from "@/components/intake/TipCard";
 import { ProfileStep, type ProfileForm } from "@/components/intake/ProfileStep";
 import { GoalsStep } from "@/components/intake/GoalsStep";
 import { AvailabilityStep } from "@/components/intake/AvailabilityStep";
@@ -14,6 +16,20 @@ import { saveIntake, clearAll } from "@/lib/storage";
 import type { GoalsAndAssessment, IntakeData } from "@/lib/types";
 
 const STEPS = ["Profile", "Goals", "Availability", "Safety"];
+
+const STEP_COPY = [
+  { title: "Let's get to know you", subtitle: "This helps us personalize your plan." },
+  { title: "What do you want to focus on?", subtitle: "Pick everything you want to work on — we'll build your week around it." },
+  { title: "When can you train?", subtitle: "We'll build your plan around your schedule." },
+  { title: "Anything we should know?", subtitle: "Help us keep you safe." },
+];
+
+const TIPS = [
+  { icon: Sparkles, title: "100% Personalized", body: "Every answer here shapes the plan you get." },
+  null,
+  { icon: Repeat2, title: "Consistency beats intensity", body: "Showing up 3x a week beats doing too much and burning out." },
+  { icon: ShieldCheck, title: "Your safety comes first", body: "We build around any limits you share, and you can update this anytime." },
+];
 
 const initialProfile: ProfileForm = {
   account_type: "player",
@@ -114,49 +130,72 @@ export default function IntakePage() {
     }
   }
 
+  const copy = STEP_COPY[step];
+  const tip = TIPS[step];
+
+  const stepContent = (
+    <>
+      {step === 0 && <ProfileStep value={profile} onChange={setProfile} />}
+      {step === 1 && (
+        <GoalsStep value={goalsAndAssessment} onChange={(next) => setGoalsAndAssessment({ ...goalsAndAssessment, ...next })} />
+      )}
+      {step === 2 && (
+        <AvailabilityStep
+          value={goalsAndAssessment}
+          onChange={(next) => setGoalsAndAssessment({ ...goalsAndAssessment, ...next })}
+        />
+      )}
+      {step === 3 && (
+        <SafetyStep
+          injuryNotes={profile.injury_notes}
+          onInjuryNotesChange={(val) => setProfile({ ...profile, injury_notes: val })}
+          waiverAccepted={waiverAccepted}
+          onWaiverChange={setWaiverAccepted}
+        />
+      )}
+    </>
+  );
+
   return (
     <>
-      <Header />
-      <main className="max-w-2xl mx-auto px-6 py-12">
-        <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50 mb-1">Build your training plan</h1>
-        <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-8">A few questions, then your first week is ready.</p>
+      <Header dark />
+      <main className="bg-zinc-950 min-h-screen">
+        <div className="max-w-4xl mx-auto px-6 py-12">
+          <StepIndicator steps={STEPS} current={step} />
 
-        <StepIndicator steps={STEPS} current={step} />
-
-        {step === 0 && <ProfileStep value={profile} onChange={setProfile} />}
-        {step === 1 && <GoalsStep value={goalsAndAssessment} onChange={(next) => setGoalsAndAssessment({ ...goalsAndAssessment, ...next })} />}
-        {step === 2 && (
-          <AvailabilityStep
-            value={goalsAndAssessment}
-            onChange={(next) => setGoalsAndAssessment({ ...goalsAndAssessment, ...next })}
-          />
-        )}
-        {step === 3 && (
-          <SafetyStep
-            injuryNotes={profile.injury_notes}
-            onInjuryNotesChange={(val) => setProfile({ ...profile, injury_notes: val })}
-            waiverAccepted={waiverAccepted}
-            onWaiverChange={setWaiverAccepted}
-          />
-        )}
-
-        {error && (
-          <p className="mt-4 text-sm text-red-600 dark:text-red-400" role="alert">
-            {error}
+          <p className="text-xs font-semibold tracking-wide text-emerald-400 mb-2">
+            STEP {step + 1} OF {STEPS.length}
           </p>
-        )}
+          <h1 className="text-3xl font-semibold text-white mb-1">{copy.title}</h1>
+          <p className="text-sm text-zinc-400 mb-8">{copy.subtitle}</p>
 
-        <div className="mt-8 flex justify-between">
-          <Button variant="secondary" onClick={goBack} disabled={step === 0 || submitting}>
-            Back
-          </Button>
-          {step < STEPS.length - 1 ? (
-            <Button onClick={goNext}>Next</Button>
+          {tip ? (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+              <div className="lg:col-span-2 rounded-2xl border border-zinc-800 bg-zinc-900/40 p-6">{stepContent}</div>
+              <TipCard icon={tip.icon} title={tip.title} body={tip.body} />
+            </div>
           ) : (
-            <Button onClick={handleSubmit} disabled={submitting}>
-              {submitting ? "Building your plan..." : "Generate my plan"}
-            </Button>
+            <div>{stepContent}</div>
           )}
+
+          {error && (
+            <p className="mt-4 text-sm text-red-400" role="alert">
+              {error}
+            </p>
+          )}
+
+          <div className="mt-8 flex justify-between">
+            <Button variant="outlineDark" onClick={goBack} disabled={step === 0 || submitting}>
+              Back
+            </Button>
+            {step < STEPS.length - 1 ? (
+              <Button onClick={goNext}>Next</Button>
+            ) : (
+              <Button onClick={handleSubmit} disabled={submitting}>
+                {submitting ? "Building your plan..." : "Generate my plan"}
+              </Button>
+            )}
+          </div>
         </div>
       </main>
     </>

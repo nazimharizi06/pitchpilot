@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, PlayCircle } from "lucide-react";
+import { ArrowRight, PlayCircle, Sparkles, Target, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { PlanPreviewCard } from "@/components/landing/PlanPreviewCard";
 import { WeekFocusCard } from "@/components/landing/WeekFocusCard";
@@ -28,11 +28,25 @@ export function Hero({ previewSession, weekThemes }: { previewSession: PlanSessi
               actually needs.
             </span>
           </h1>
-          <p className="text-lg text-zinc-400 mb-9 max-w-lg">
+          <p className="text-lg text-zinc-400 mb-6 max-w-lg">
             A quick intake, then a personalized week of soccer training — ball control, dribbling, passing,
             shooting, speed, endurance, and weak foot — matched to their level, goals, and what you actually have to
             work with.
           </p>
+          <ul className="flex flex-col gap-2 mb-9 text-sm text-zinc-300">
+            <li className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-emerald-400 shrink-0" />
+              Personalized just for you
+            </li>
+            <li className="flex items-center gap-2">
+              <Target className="h-4 w-4 text-emerald-400 shrink-0" />
+              Science-backed sessions
+            </li>
+            <li className="flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-emerald-400 shrink-0" />
+              Track progress every week
+            </li>
+          </ul>
           <div className="flex flex-col sm:flex-row gap-3">
             <Link href="/intake">
               <Button className="w-full sm:w-auto text-base px-6 py-3 gap-2">

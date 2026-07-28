@@ -1,7 +1,7 @@
 "use client";
 
 import type { UserProfile } from "@/lib/types";
-import { Field, inputClass } from "@/components/ui/Field";
+import { Field, darkInputClass } from "@/components/ui/Field";
 
 export type ProfileForm = Omit<UserProfile, "id">;
 
@@ -16,9 +16,9 @@ export function ProfileStep({
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <Field label="Who's setting this up?">
+      <Field dark label="Who's setting this up?">
         <select
-          className={inputClass}
+          className={darkInputClass}
           value={value.account_type}
           onChange={(e) => set("account_type", e.target.value as ProfileForm["account_type"])}
         >
@@ -27,10 +27,10 @@ export function ProfileStep({
         </select>
       </Field>
 
-      <Field label="Age">
+      <Field dark label="Age">
         <input
           type="number"
-          className={inputClass}
+          className={darkInputClass}
           value={value.age}
           min={5}
           max={100}
@@ -38,9 +38,9 @@ export function ProfileStep({
         />
       </Field>
 
-      <Field label="Gender">
+      <Field dark label="Gender">
         <select
-          className={inputClass}
+          className={darkInputClass}
           value={value.gender}
           onChange={(e) => set("gender", e.target.value as ProfileForm["gender"])}
         >
@@ -51,9 +51,9 @@ export function ProfileStep({
         </select>
       </Field>
 
-      <Field label="Dominant foot">
+      <Field dark label="Dominant foot">
         <select
-          className={inputClass}
+          className={darkInputClass}
           value={value.dominant_foot}
           onChange={(e) => set("dominant_foot", e.target.value as ProfileForm["dominant_foot"])}
         >
@@ -63,39 +63,39 @@ export function ProfileStep({
         </select>
       </Field>
 
-      <Field label="Height (inches)">
+      <Field dark label="Height (inches)">
         <input
           type="number"
-          className={inputClass}
+          className={darkInputClass}
           value={value.height_in}
           min={1}
           onChange={(e) => set("height_in", Number(e.target.value))}
         />
       </Field>
 
-      <Field label="Weight (lb)">
+      <Field dark label="Weight (lb)">
         <input
           type="number"
-          className={inputClass}
+          className={darkInputClass}
           value={value.weight_lb}
           min={1}
           onChange={(e) => set("weight_lb", Number(e.target.value))}
         />
       </Field>
 
-      <Field label="Position (optional)">
+      <Field dark label="Position (optional)">
         <input
           type="text"
-          className={inputClass}
+          className={darkInputClass}
           placeholder="e.g. Center Back"
           value={value.position ?? ""}
           onChange={(e) => set("position", e.target.value || null)}
         />
       </Field>
 
-      <Field label="Current playing level">
+      <Field dark label="Current playing level">
         <select
-          className={inputClass}
+          className={darkInputClass}
           value={value.playing_level}
           onChange={(e) => set("playing_level", e.target.value as ProfileForm["playing_level"])}
         >
