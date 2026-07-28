@@ -1,36 +1,72 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# PitchPilot
 
-## Getting Started
+Personalized soccer skill training plans, generated from a short intake form. This is the core MVP slice:
+**intake wizard → AI-judgment plan generation → session-by-session plan viewer.** No accounts, payments, or
+reminders yet — see "Not built yet" below.
 
-First, run the development server:
+Everything runs locally with **zero external accounts** — no Supabase, Stripe, Twilio, Resend, or Anthropic
+keys required to try it.
+
+## Getting started
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000), click through the intake at `/intake`, and you'll land on a
+generated week of training at `/plan`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm run test   # vitest — plan-generation engine logic
+npm run build  # production build + type-check
+npm run lint   # eslint
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## How it's organized
 
-## Learn More
+- `lib/types.ts` — the data schema from the planning doc (Drill, UserProfile, GoalsAndAssessment, Plan).
+- `lib/data/drills.ts` — the full drill library: every category/level from the doc, plus the previously-open
+  gaps filled in — warm-up/cool-down drills, `weak_foot_variant` tags, `space`/`equipment`/`progressions`, and
+  an added `estimated_minutes` field (not in the original schema table) used to budget drills against the
+  45-60 min session target.
+- `lib/engine/filter.ts` — rule-based hard filters (equipment, space, level, category) with the fallback chain
+  for when a filter combo matches zero drills: widen level → relax equipment → relax space (last resort).
+- `lib/engine/schedule.ts` — fits warm-up + as many main drills as fit the time budget + cool-down.
+- `lib/engine/generatePlan.ts` — orchestrates filtering, scheduling, and the AI-judgment layer into a full week.
+- `lib/ai/provider.ts` + `lib/ai/mockProvider.ts` — the AI-judgment layer (balancing goals, picking among
+  matching drills, explaining sessions) behind a swappable interface. `mockProvider` is deterministic, no API
+  key needed. `lib/ai/claudeProvider.ts` is a stub for wiring in a real Claude API call later.
+- `lib/storage.ts` — intake + plan persistence. Currently `localStorage` only (no accounts/DB this pass).
+- `app/intake`, `app/plan`, `app/api/generate-plan` — the wizard, the plan viewer, and the route handler that
+  connects them.
 
-To learn more about Next.js, take a look at the following resources:
+## Swapping in real services (next passes, not done here)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Each of these was deliberately left as a mock/stub so this runs today with no setup. To go further:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. **Claude API** — implement `lib/ai/claudeProvider.ts` against the `AIProvider` interface in
+   `lib/ai/provider.ts`, then pass it into `generatePlan(intake, claudeProvider)` instead of the mock default.
+   Needs `ANTHROPIC_API_KEY`.
+2. **Supabase/Firebase** — replace `lib/storage.ts` with real reads/writes, add accounts (`account_type` already
+   exists on `UserProfile`), and persist plans server-side instead of `localStorage`.
+3. **Stripe** — add the 7-day trial + Base/Pro/Premium subscription tiers described on the landing page
+   (currently informational only, no checkout wired up).
+4. **Twilio + Resend** — day-of and missed-session reminders.
+5. **Re-check flow** — a manually-triggered flow that updates `self_ratings`/`goals` (not profile info) and lets
+   the app suggest level-ups, per the doc.
 
-## Deploy on Vercel
+## Gaps this project can't close (need the founder / a lawyer, not more code)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- Purchasing `pitchpilotapp.app`.
+- Real COPPA/legal review and liability-waiver language — `components/intake/SafetyStep.tsx` currently shows
+  clearly-labeled **placeholder** waiver text. Do not use this in front of real users/payments before a lawyer
+  reviews it.
+- Sourcing/filming drill demonstration videos (Premium tier feature).
+- Creating the actual Supabase/Stripe/Twilio/Resend/Anthropic accounts and keys.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Content review needed
+
+`lib/data/drills.ts` is coaching content I drafted (Weak Foot drill refinement, new warm-up/cool-down drills,
+weak-foot variant tags, and every drill's space/equipment/progressions/estimated_minutes) — per the planning
+doc, this is exactly the kind of thing that should get a founder/coach review pass before it reaches real users.
