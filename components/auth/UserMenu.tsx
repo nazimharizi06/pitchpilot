@@ -55,6 +55,16 @@ export function UserMenu({ dark = false }: { dark?: boolean }) {
 
   return (
     <div className="flex items-center gap-3">
+      <Link
+        href="/plan"
+        className={
+          dark
+            ? "text-sm font-medium text-zinc-400 hover:text-white transition-colors"
+            : "text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
+        }
+      >
+        My Plan
+      </Link>
       <span
         className={
           dark

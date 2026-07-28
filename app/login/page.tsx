@@ -21,7 +21,9 @@ function GoogleIcon() {
 
 function LoginForm() {
   const searchParams = useSearchParams();
-  const next = searchParams.get("next") ?? "/";
+  // Plain "Log in" clicks (no `next` param, e.g. from the header) should land
+  // signed-in users on their plan, not back on the marketing homepage.
+  const next = searchParams.get("next") ?? "/plan";
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
