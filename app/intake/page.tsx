@@ -9,7 +9,7 @@ import { GoalsStep } from "@/components/intake/GoalsStep";
 import { AvailabilityStep } from "@/components/intake/AvailabilityStep";
 import { SafetyStep } from "@/components/intake/SafetyStep";
 import { Button } from "@/components/ui/Button";
-import { profileSchema, goalsAndAssessmentSchema } from "@/lib/validation";
+import { profileSchema, goalsStepSchema, availabilityStepSchema } from "@/lib/validation";
 import { saveIntake, savePlan } from "@/lib/storage";
 import type { GoalsAndAssessment, IntakeData, Plan } from "@/lib/types";
 
@@ -51,11 +51,11 @@ export default function IntakePage() {
       if (!result.success) return setError(result.error.issues[0]?.message ?? "Check your profile info");
     }
     if (step === 1) {
-      const result = goalsAndAssessmentSchema.safeParse(goalsAndAssessment);
+      const result = goalsStepSchema.safeParse(goalsAndAssessment);
       if (!result.success) return setError(result.error.issues[0]?.message ?? "Check your goals");
     }
     if (step === 2) {
-      const result = goalsAndAssessmentSchema.safeParse(goalsAndAssessment);
+      const result = availabilityStepSchema.safeParse(goalsAndAssessment);
       if (!result.success) return setError(result.error.issues[0]?.message ?? "Check your availability");
     }
     setStep((s) => Math.min(s + 1, STEPS.length - 1));
