@@ -10,8 +10,8 @@ import { AvailabilityStep } from "@/components/intake/AvailabilityStep";
 import { SafetyStep } from "@/components/intake/SafetyStep";
 import { Button } from "@/components/ui/Button";
 import { profileSchema, goalsStepSchema, availabilityStepSchema } from "@/lib/validation";
-import { saveIntake, savePlan } from "@/lib/storage";
-import type { GoalsAndAssessment, IntakeData, Plan } from "@/lib/types";
+import { saveIntake, clearAll } from "@/lib/storage";
+import type { GoalsAndAssessment, IntakeData } from "@/lib/types";
 
 const STEPS = ["Profile", "Goals", "Availability", "Safety"];
 
@@ -103,8 +103,9 @@ export default function IntakePage() {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error ?? "Couldn't generate your plan. Please try again.");
       }
-      const plan = (await res.json()) as Plan;
-      savePlan(plan);
+      // The server persisted the plan directly (see /api/generate-plan) — the
+      // localStorage staging copy from above is no longer needed.
+      clearAll();
       router.push("/plan");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");

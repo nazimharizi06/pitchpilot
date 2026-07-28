@@ -5,6 +5,7 @@ import { drills } from "@/lib/data/drills";
 import { SKILL_CATEGORIES, SKILL_CATEGORY_LABELS } from "@/lib/types";
 import { Header } from "@/components/landing/Header";
 import { DrillCard } from "@/components/plan/DrillCard";
+import { FavoriteButton } from "@/components/dashboard/FavoriteButton";
 
 export default async function DrillsPage() {
   const supabase = await createClient();
@@ -16,6 +17,9 @@ export default async function DrillsPage() {
 
   const subscription = await getActiveSubscription(supabase, user.id);
   if (!meetsTier(subscription, "base")) redirect("/#pricing");
+
+  const { data: favoriteRows } = await supabase.from("favorite_drills").select("drill_id").eq("user_id", user.id);
+  const favoritedIds = new Set((favoriteRows ?? []).map((row) => row.drill_id as string));
 
   return (
     <>
@@ -37,7 +41,12 @@ export default async function DrillsPage() {
               </h2>
               <div className="flex flex-col gap-3">
                 {categoryDrills.map((drill) => (
-                  <DrillCard key={drill.id} drill={drill} repsDuration={drill.reps_duration} />
+                  <div key={drill.id} className="relative">
+                    <div className="absolute top-3 right-3 z-10">
+                      <FavoriteButton drillId={drill.id} initialFavorited={favoritedIds.has(drill.id)} />
+                    </div>
+                    <DrillCard drill={drill} repsDuration={drill.reps_duration} />
+                  </div>
                 ))}
               </div>
             </section>
