@@ -159,42 +159,53 @@ export default function IntakePage() {
   return (
     <>
       <Header dark />
-      <main className="bg-zinc-950 min-h-screen">
-        <div className="max-w-4xl mx-auto px-6 py-12">
-          <StepIndicator steps={STEPS} current={step} />
+      <main className="relative bg-zinc-950 min-h-screen overflow-hidden">
+        <div aria-hidden className="absolute inset-0 bg-dot-grid text-white/[0.03]" />
+        <div
+          aria-hidden
+          className="absolute -top-40 left-1/2 -translate-x-1/2 h-[30rem] w-[50rem] rounded-full bg-emerald-500/10 blur-3xl"
+        />
+        <div className="relative max-w-5xl mx-auto px-6 py-16">
+          <div className="max-w-xs mx-auto mb-10">
+            <StepIndicator steps={STEPS} current={step} />
+          </div>
 
-          <p className="text-xs font-semibold tracking-wide text-emerald-400 mb-2">
-            STEP {step + 1} OF {STEPS.length}
-          </p>
-          <h1 className="text-3xl font-semibold text-white mb-1">{copy.title}</h1>
-          <p className="text-sm text-zinc-400 mb-8">{copy.subtitle}</p>
-
-          {tip ? (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-              <div className="lg:col-span-2 rounded-2xl border border-zinc-800 bg-zinc-900/40 p-6">{stepContent}</div>
-              <TipCard icon={tip.icon} title={tip.title} body={tip.body} />
-            </div>
-          ) : (
-            <div>{stepContent}</div>
-          )}
-
-          {error && (
-            <p className="mt-4 text-sm text-red-400" role="alert">
-              {error}
+          <div className="text-center mb-10">
+            <p className="text-xs font-semibold tracking-wide text-emerald-400 mb-2">
+              STEP {step + 1} OF {STEPS.length}
             </p>
-          )}
+            <h1 className="text-3xl sm:text-4xl font-semibold text-white mb-2">{copy.title}</h1>
+            <p className="text-sm text-zinc-400">{copy.subtitle}</p>
+          </div>
 
-          <div className="mt-8 flex justify-between">
-            <Button variant="outlineDark" onClick={goBack} disabled={step === 0 || submitting}>
-              Back
-            </Button>
-            {step < STEPS.length - 1 ? (
-              <Button onClick={goNext}>Next</Button>
+          <div className={tip ? "max-w-3xl mx-auto" : "max-w-4xl mx-auto"}>
+            {tip ? (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+                <div className="lg:col-span-2">{stepContent}</div>
+                <TipCard icon={tip.icon} title={tip.title} body={tip.body} />
+              </div>
             ) : (
-              <Button onClick={handleSubmit} disabled={submitting}>
-                {submitting ? "Building your plan..." : "Generate my plan"}
-              </Button>
+              <div>{stepContent}</div>
             )}
+
+            {error && (
+              <p className="mt-4 text-sm text-red-400 text-center" role="alert">
+                {error}
+              </p>
+            )}
+
+            <div className="mt-10 flex justify-between gap-3">
+              <Button variant="outlineDark" onClick={goBack} disabled={step === 0 || submitting}>
+                Back
+              </Button>
+              {step < STEPS.length - 1 ? (
+                <Button onClick={goNext}>Next</Button>
+              ) : (
+                <Button onClick={handleSubmit} disabled={submitting}>
+                  {submitting ? "Building your plan..." : "Generate my plan"}
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </main>

@@ -1,5 +1,6 @@
 "use client";
 
+import { User } from "lucide-react";
 import type { UserProfile } from "@/lib/types";
 import { Field, darkInputClass } from "@/components/ui/Field";
 
@@ -39,16 +40,22 @@ export function ProfileStep({
       </Field>
 
       <Field dark label="Gender">
-        <select
-          className={darkInputClass}
-          value={value.gender}
-          onChange={(e) => set("gender", e.target.value as ProfileForm["gender"])}
-        >
-          <option value="male">Male</option>
-          <option value="female">Female</option>
-          <option value="other">Other</option>
-          <option value="prefer_not_to_say">Prefer not to say</option>
-        </select>
+        <div className="relative">
+          <span className="absolute left-1.5 top-1/2 -translate-y-1/2 h-6 w-6 rounded-md bg-emerald-950/60 text-emerald-400 flex items-center justify-center pointer-events-none">
+            <User className="h-3.5 w-3.5" />
+          </span>
+          <select
+            className={`${darkInputClass} w-full`}
+            style={{ paddingLeft: "2.25rem" }}
+            value={value.gender}
+            onChange={(e) => set("gender", e.target.value as ProfileForm["gender"])}
+          >
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+            <option value="other">Other</option>
+            <option value="prefer_not_to_say">Prefer not to say</option>
+          </select>
+        </div>
       </Field>
 
       <Field dark label="Dominant foot">
