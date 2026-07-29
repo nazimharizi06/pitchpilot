@@ -13,6 +13,8 @@ export interface ExplainSessionInput {
   profile: UserProfile;
   /** Other selected goals whose drills were pulled in to fill out the session once the theme's own pool ran dry. */
   blendedThemeLabels: string[];
+  /** True when today's theme is one of profile.position's emphasized categories (lib/positionMeta.ts) — lets the explanation mention position naturally instead of forcing it into every session. */
+  positionEmphasis: boolean;
 }
 
 /**

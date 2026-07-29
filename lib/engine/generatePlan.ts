@@ -2,6 +2,7 @@ import { drills } from "@/lib/data/drills";
 import { filterDrillsWithFallback, filterWarmupOrCooldown } from "@/lib/engine/filter";
 import { assembleSession } from "@/lib/engine/schedule";
 import { mockProvider } from "@/lib/ai/mockProvider";
+import { POSITION_EMPHASIS } from "@/lib/positionMeta";
 import type { AIProvider, WeightedGoal } from "@/lib/ai/provider";
 import type { Drill, Equipment, IntakeData, Level, Plan, PlanSession, Space, SkillCategory } from "@/lib/types";
 import { SKILL_CATEGORY_LABELS } from "@/lib/types";
@@ -64,15 +65,21 @@ export async function generatePlan(intake: IntakeData, aiProvider: AIProvider = 
 
   const weighted = await aiProvider.weightGoals(goals, self_ratings);
 
-  // Goalkeepers get goalkeeping training prioritized — boosted to the max weight
-  // regardless of self-rating, so it isn't crowded out by other selected goals.
-  // Only takes effect if they actually selected "goalkeeping" as a goal; a
-  // goalkeeper who didn't gets no special treatment, and goalkeeping drills are
-  // otherwise never selected for a plan that didn't ask for them (see
-  // candidatesForGoal below), which is what keeps them out of outfield plans.
-  if (profile.position === "goalkeeper") {
-    const gkEntry = weighted.find((w) => w.goal === "goalkeeping");
-    if (gkEntry) gkEntry.weight = 3;
+  // Position-aware weighting — a coach naturally leans on the categories that
+  // matter most for a player's position, without overriding what the player
+  // actually asked to work on. This only ever nudges weight *up* for a goal the
+  // player already selected — it never adds a goal they didn't pick, and never
+  // lowers one either. Goalkeeper is the one exception that goes all the way to
+  // the max weight: goalkeeping is exclusive enough (either you're training it
+  // or you're not) that a modest nudge doesn't make sense the way it does for
+  // outfield categories, which naturally overlap across positions.
+  const emphasized = (profile.position ? POSITION_EMPHASIS[profile.position] : undefined) ?? [];
+  if (emphasized.length > 0) {
+    const floor = profile.position === "goalkeeper" ? 3 : 2;
+    for (const goal of emphasized) {
+      const entry = weighted.find((w) => w.goal === goal);
+      if (entry) entry.weight = Math.max(entry.weight, floor);
+    }
     weighted.sort((a, b) => b.weight - a.weight);
   }
 
@@ -156,6 +163,7 @@ export async function generatePlan(intake: IntakeData, aiProvider: AIProvider = 
       drills: d.sessionDrills,
       profile,
       blendedThemeLabels: d.blendedThemeLabels,
+      positionEmphasis: emphasized.includes(d.theme),
     })
   );
 

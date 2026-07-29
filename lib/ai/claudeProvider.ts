@@ -23,7 +23,18 @@ function getClient(): Anthropic {
 const weightedGoalsSchema = z.object({
   weights: z.array(
     z.object({
-      goal: z.enum(["ball_control", "dribbling", "passing", "shooting", "speed_agility", "endurance", "weak_foot"]),
+      goal: z.enum([
+        "ball_control",
+        "dribbling",
+        "passing",
+        "shooting",
+        "speed_agility",
+        "endurance",
+        "weak_foot",
+        "strength",
+        "defending",
+        "goalkeeping",
+      ]),
       weight: z.number().int().min(1).max(3),
     })
   ),
@@ -59,7 +70,7 @@ export const claudeProvider: AIProvider = {
     return pickDrillsByUsage(candidates, usedCounts, count);
   },
 
-  async explainSession({ themeLabel, level, drills, profile, blendedThemeLabels }: ExplainSessionInput) {
+  async explainSession({ themeLabel, level, drills, profile, blendedThemeLabels, positionEmphasis }: ExplainSessionInput) {
     const response = await getClient().messages.create({
       model: MODEL,
       max_tokens: 400,
@@ -68,7 +79,9 @@ export const claudeProvider: AIProvider = {
       system:
         "You are a youth soccer coach writing a short, encouraging note introducing today's training " +
         "session to a player. Two to three sentences. Mention the session's theme and reference the " +
-        "specific drills by name. Plain text only, no markdown.",
+        "specific drills by name. If position_emphasis is true, briefly note why today's theme matters " +
+        "for the player's position — one clause, not a lecture. If it's false, don't mention position at " +
+        "all. Plain text only, no markdown.",
       messages: [
         {
           role: "user",
@@ -76,6 +89,8 @@ export const claudeProvider: AIProvider = {
             theme: themeLabel,
             goal_level: level,
             player_playing_level: profile.playing_level,
+            position: profile.position,
+            position_emphasis: positionEmphasis,
             drills: drills.map((d) => d.name),
             blended_with: blendedThemeLabels,
           }),
