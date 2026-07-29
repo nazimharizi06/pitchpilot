@@ -44,8 +44,8 @@ arising from the participant's use of the training plans.
 
 ## 7. Governing Law
 
-This waiver is governed by the laws of `[state/jurisdiction — to be finalized by counsel]`. If any provision
-is found unenforceable, the remaining provisions stay in effect.
+This waiver is governed by the laws of the State of New York, USA. If any provision is found unenforceable,
+the remaining provisions stay in effect.
 
 ---
 

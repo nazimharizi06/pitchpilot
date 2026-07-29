@@ -27,13 +27,10 @@ the new price. `[Lawyer to confirm required notice period for price changes unde
 ## 3. How to cancel
 
 You can cancel your subscription at any time from your account settings ("Manage subscription"), which opens
-Stripe's Billing Portal. Cancellation stops future billing.
-
-`[Founder/lawyer to confirm and state explicitly: does cancellation take effect immediately, or does access
-continue through the end of the current paid billing period? This must match the actual Stripe subscription
-configuration (app/api/portal/route.ts and the Stripe dashboard's cancellation behavior) — do not leave this
-ambiguous, since several jurisdictions (e.g. California's Automatic Renewal Law) require this to be stated
-clearly.]`
+Stripe's Billing Portal. Cancellation stops future billing, and **your access continues through the end of
+your current paid billing period** — canceling does not immediately cut off access to the plan or drill
+library you've already paid for. This matches the cancellation behavior configured in the Stripe Billing
+Portal as of this writing; if that configuration ever changes, this section must be updated to match.
 
 ## 4. Refunds
 

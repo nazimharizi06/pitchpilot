@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { track } from "@vercel/analytics";
 import { Check } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { PhoneNumberModal } from "@/components/landing/PhoneNumberModal";
+import { ComparisonTable } from "@/components/landing/ComparisonTable";
 import type { SubscriptionTier } from "@/lib/subscriptions";
 
 const TIERS: {
@@ -29,7 +31,7 @@ const TIERS: {
       "Everything in Base",
       "AI-generated weekly training plans",
       "Richer AI explanations for every session",
-      "Manual re-check & level-ups",
+      "Retake your intake to refresh your plan (every 7 days)",
     ],
   },
   {
@@ -37,7 +39,12 @@ const TIERS: {
     name: "Premium",
     price: "$50",
     popular: false,
-    features: ["Everything in Pro", "Drill demonstration videos"],
+    features: [
+      "Everything in Pro",
+      "Unlimited plan regeneration",
+      "Priority support",
+      "Drill demonstration videos (coming soon)",
+    ],
   },
 ];
 
@@ -48,6 +55,7 @@ export function PricingSection() {
 
   async function startCheckout(tier: SubscriptionTier, phone?: string) {
     setError(null);
+    if (!phone) track("start_trial_click", { location: "pricing", tier });
     setLoadingTier(tier);
     try {
       const res = await fetch("/api/checkout", {
@@ -91,7 +99,7 @@ export function PricingSection() {
           <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight text-white mb-3">
             Start free. Stay if it&apos;s working.
           </h2>
-          <p className="text-zinc-400">7-day free trial on every plan. Cancel anytime going forward.</p>
+          <p className="text-zinc-400">7 days free. Cancel before the trial ends and you won&apos;t be charged.</p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 items-start">
           {TIERS.map((tier) => (
@@ -137,7 +145,11 @@ export function PricingSection() {
             {error}
           </p>
         )}
-        <p className="text-xs text-zinc-500 mt-8 text-center">No refunds. Cancel anytime going forward.</p>
+        <p className="text-xs text-zinc-500 mt-8 text-center">
+          Cancel anytime. Your access continues through the end of your current billing period. Payments
+          already processed are nonrefundable except where required by law.
+        </p>
+        <ComparisonTable />
       </div>
       {phonePromptTier && (
         <PhoneNumberModal

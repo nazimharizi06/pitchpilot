@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
+import { track } from "@vercel/analytics/server";
 import { getStripe } from "@/lib/stripe/client";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { SubscriptionTier } from "@/lib/subscriptions";
@@ -91,6 +92,9 @@ export async function POST(request: Request) {
             phone: phoneRow.phone,
           });
         }
+
+        const priceId = subscription.items.data[0]?.price.id;
+        await track("checkout_completed", { tier: (priceId && TIER_BY_PRICE[priceId]) ?? "unknown" });
       }
       break;
     }
@@ -99,6 +103,9 @@ export async function POST(request: Request) {
       const subscription = event.data.object as Stripe.Subscription;
       const customerId = typeof subscription.customer === "string" ? subscription.customer : subscription.customer.id;
       await upsertFromSubscription(admin, null, customerId, subscription);
+      if (event.type === "customer.subscription.deleted") {
+        await track("subscription_canceled", {});
+      }
       break;
     }
   }

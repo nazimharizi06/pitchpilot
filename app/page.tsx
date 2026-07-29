@@ -4,8 +4,12 @@ import { Header } from "@/components/landing/Header";
 import { Hero } from "@/components/landing/Hero";
 import { HowItWorks } from "@/components/landing/HowItWorks";
 import { GoalsGrid } from "@/components/landing/GoalsGrid";
+import { SamplePlanSection } from "@/components/landing/SamplePlanSection";
+import { WhyDifferentSection } from "@/components/landing/WhyDifferentSection";
+import { FounderSection } from "@/components/landing/FounderSection";
 import { PricingSection } from "@/components/landing/PricingSection";
 import { FAQ } from "@/components/landing/FAQ";
+import { ParentTrustSection } from "@/components/landing/ParentTrustSection";
 import { CTASection } from "@/components/landing/CTASection";
 import { Footer } from "@/components/landing/Footer";
 
@@ -25,11 +29,17 @@ const DEMO_INTAKE: IntakeData = {
     injury_notes: null,
   },
   goalsAndAssessment: {
-    goals: ["shooting", "speed_agility"],
-    self_ratings: { shooting: "beginner", speed_agility: "intermediate" },
-    days_per_week: 3,
+    goals: ["shooting", "dribbling", "passing", "speed_agility", "weak_foot"],
+    self_ratings: {
+      shooting: "beginner",
+      dribbling: "beginner",
+      passing: "intermediate",
+      speed_agility: "intermediate",
+      weak_foot: "advanced",
+    },
+    days_per_week: 7,
     space_available: "full_field",
-    equipment_available: ["ball", "goal", "cones"],
+    equipment_available: ["ball", "goal", "cones", "wall", "ladder"],
   },
   waiverAccepted: true,
   guardianName: null,
@@ -47,8 +57,12 @@ export default async function Home() {
         <Hero previewSession={demoPlan.sessions[0]} weekThemes={weekThemes} />
         <HowItWorks />
         <GoalsGrid />
+        <SamplePlanSection sessions={demoPlan.sessions} />
+        <WhyDifferentSection />
+        <FounderSection />
         <PricingSection />
         <FAQ />
+        <ParentTrustSection />
         <CTASection />
       </main>
       <Footer />

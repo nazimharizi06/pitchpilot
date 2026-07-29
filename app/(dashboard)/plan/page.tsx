@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { track } from "@vercel/analytics";
 import { CalendarDays, Flame, Target, Clock, ListChecks } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { loadIntake, clearAll } from "@/lib/storage";
@@ -171,12 +172,14 @@ export default function MyPlanPage() {
 
   async function handleToggleDrill(day: number, drillId: string) {
     if (!state) return;
+    const isFirstEver = state.progress.every((p) => p.completed_drill_ids.length === 0 && !p.completed_at);
     const supabase = createClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) return;
     const nextIds = await toggleDrillComplete(supabase, user.id, day, drillId, state.progress);
+    if (isFirstEver) track("first_session_started", {});
     setState({
       ...state,
       progress: state.progress.map((p) => (p.day === day ? { ...p, completed_drill_ids: nextIds } : p)),
@@ -185,12 +188,14 @@ export default function MyPlanPage() {
 
   async function handleCompleteSession(day: number) {
     if (!state) return;
+    const isFirstEver = state.progress.every((p) => !p.completed_at);
     const supabase = createClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) return;
     await markSessionComplete(supabase, user.id, day);
+    if (isFirstEver) track("first_session_completed", {});
     const nowIso = new Date().toISOString();
     setState({
       ...state,

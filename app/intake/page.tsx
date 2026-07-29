@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { track } from "@vercel/analytics";
 import { Sparkles, Repeat2, ShieldCheck } from "lucide-react";
 import { Header } from "@/components/landing/Header";
 import { StepIndicator } from "@/components/intake/StepIndicator";
@@ -136,6 +137,7 @@ export default function IntakePage() {
       // The server persisted the plan directly (see /api/generate-plan) — the
       // localStorage staging copy from above is no longer needed.
       clearAll();
+      track("intake_completed", { isMinorPlayer });
       router.push("/plan");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");

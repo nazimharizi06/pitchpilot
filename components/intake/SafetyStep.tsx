@@ -93,8 +93,8 @@ export function SafetyStep({
           </p>
           <p>
             <span className="font-semibold text-zinc-200">7. Governing Law.</span> This waiver is governed by the
-            laws of [state/jurisdiction — to be finalized by counsel]. If any provision is found unenforceable, the
-            remaining provisions stay in effect.
+            laws of the State of New York, USA. If any provision is found unenforceable, the remaining
+            provisions stay in effect.
           </p>
         </div>
 

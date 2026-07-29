@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { track } from "@vercel/analytics";
 import { ArrowRight, PlayCircle, Sparkles, Target, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { PlanPreviewCard } from "@/components/landing/PlanPreviewCard";
@@ -48,7 +51,7 @@ export function Hero({ previewSession, weekThemes }: { previewSession: PlanSessi
             </li>
           </ul>
           <div className="flex flex-col sm:flex-row gap-3">
-            <Link href="/intake">
+            <Link href="/intake" onClick={() => track("start_trial_click", { location: "hero" })}>
               <Button className="w-full sm:w-auto text-base px-6 py-3 gap-2">
                 Start your free 7-day trial
                 <ArrowRight className="h-4 w-4" />
@@ -61,7 +64,7 @@ export function Hero({ previewSession, weekThemes }: { previewSession: PlanSessi
               </Button>
             </a>
           </div>
-          <p className="text-xs text-zinc-500 mt-4">No card tricks. Cancel anytime going forward.</p>
+          <p className="text-xs text-zinc-500 mt-4">7 days free. Cancel before the trial ends and you won&apos;t be charged.</p>
         </div>
 
         <div className="relative flex justify-center lg:justify-end">

@@ -107,10 +107,10 @@ cancel your subscription at any time as described in Section 5.
 
 ## 11. Dispute resolution
 
-`[Lawyer to draft: governing law, venue, and whether PitchPilot wants an arbitration clause and/or
-class-action waiver. Note that pre-dispute arbitration clauses have specific restrictions in some
-jurisdictions, and enforceability against a minor's guardian may differ from an adult signing for
-themselves.]`
+These Terms are governed by the laws of the State of New York, USA, without regard to conflict-of-law
+principles. `[Lawyer to confirm venue, and whether PitchPilot wants an arbitration clause and/or class-action
+waiver. Note that pre-dispute arbitration clauses have specific restrictions in some jurisdictions, and
+enforceability against a minor's guardian may differ from an adult signing for themselves.]`
 
 ## 12. Changes to these Terms
 
