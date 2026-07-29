@@ -125,6 +125,8 @@ describe("generatePlan (integration, real drill library)", () => {
         equipment_available: ["ball", "goal", "wall", "cones", "ladder", "partner"],
       },
       waiverAccepted: true,
+      guardianName: null,
+      guardianEmail: null,
     };
   }
 

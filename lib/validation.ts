@@ -47,11 +47,25 @@ export const goalsAndAssessmentSchema = z
 // Server-side (API route) boundary schema — includes the id assigned client-side.
 export const userProfileSchema = profileSchema.extend({ id: z.string().min(1) });
 
-export const intakeDataSchema = z.object({
-  profile: userProfileSchema,
-  goalsAndAssessment: goalsAndAssessmentSchema,
-  waiverAccepted: z.literal(true, { message: "You must acknowledge the waiver to continue" }),
-});
+export const intakeDataSchema = z
+  .object({
+    profile: userProfileSchema,
+    goalsAndAssessment: goalsAndAssessmentSchema,
+    waiverAccepted: z.literal(true, { message: "You must acknowledge the waiver to continue" }),
+    guardianName: z.string().trim().min(1).nullable(),
+    guardianEmail: z.string().trim().email().nullable(),
+  })
+  // A minor can't be the one legally accepting a liability waiver — a parent or
+  // guardian must, and we verify that via a confirmation email (guardianEmail) —
+  // see components/intake/SafetyStep.tsx and app/api/generate-plan/route.ts.
+  .refine((data) => data.profile.account_type !== "player" || data.profile.age >= 18 || !!data.guardianName?.trim(), {
+    message: "A parent or guardian must accept the waiver for players under 18",
+    path: ["guardianName"],
+  })
+  .refine((data) => data.profile.account_type !== "player" || data.profile.age >= 18 || !!data.guardianEmail?.trim(), {
+    message: "A parent or guardian email is required for players under 18",
+    path: ["guardianEmail"],
+  });
 
 // Collected once before a user's first checkout — see app/api/checkout/route.ts.
 // Permissive on formatting (spaces/dashes/parens) since normalizePhone (lib/phone.ts)

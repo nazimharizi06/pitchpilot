@@ -88,6 +88,12 @@ export interface IntakeData {
   profile: UserProfile;
   goalsAndAssessment: GoalsAndAssessment;
   waiverAccepted: boolean;
+  // Required when profile.account_type === "player" and profile.age is under 18 —
+  // a minor can't be the one legally accepting a liability waiver, a parent/guardian
+  // must (see components/intake/SafetyStep.tsx and lib/validation.ts). guardianEmail
+  // is where the confirmation link is sent — see app/api/generate-plan/route.ts.
+  guardianName: string | null;
+  guardianEmail: string | null;
 }
 
 export interface PlanDrillEntry {

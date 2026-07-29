@@ -32,6 +32,8 @@ const DEMO_INTAKE: IntakeData = {
     equipment_available: ["ball", "goal", "cones"],
   },
   waiverAccepted: true,
+  guardianName: null,
+  guardianEmail: null,
 };
 
 export default async function Home() {

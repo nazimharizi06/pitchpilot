@@ -1,9 +1,10 @@
+import { randomUUID } from "crypto";
 import { NextResponse } from "next/server";
 import { intakeDataSchema } from "@/lib/validation";
-import { generatePlan } from "@/lib/engine/generatePlan";
-import { mockProvider } from "@/lib/ai/mockProvider";
-import { claudeProvider } from "@/lib/ai/claudeProvider";
+import { generateAndPersistPlan } from "@/lib/planGeneration";
+import { sendGuardianConsentEmail } from "@/lib/email";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getActiveSubscription, meetsTier } from "@/lib/subscriptions";
 
 export async function POST(request: Request) {
@@ -31,28 +32,28 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: result.error.issues[0]?.message ?? "Invalid intake data" }, { status: 400 });
   }
 
-  // Falls back to the deterministic mock provider when no key is configured,
-  // so the app still runs with zero setup — see README.
-  const provider = process.env.ANTHROPIC_API_KEY ? claudeProvider : mockProvider;
-  const plan = await generatePlan(result.data, provider);
+  const { profile, guardianName, guardianEmail } = result.data;
+  const isMinorPlayer = profile.account_type === "player" && profile.age < 18;
 
-  // Persist the plan and reset per-day progress — this is the one place a
-  // plan is (re)created, so it's also the natural place to reset tracking.
-  await supabase.from("plans").upsert({
-    user_id: user.id,
-    intake: result.data,
-    plan,
-    created_at: new Date().toISOString(),
-  });
-  await supabase.from("session_progress").delete().eq("user_id", user.id);
-  await supabase.from("session_progress").insert(
-    plan.sessions.map((session) => ({
+  if (isMinorPlayer) {
+    // A minor can't be the one who legally accepts the liability waiver — hold off on
+    // generating anything until their parent/guardian clicks the confirmation email.
+    // guardianName/guardianEmail are required by intakeDataSchema in this case.
+    const token = randomUUID();
+    const admin = createAdminClient();
+    await admin.from("guardian_verifications").upsert({
       user_id: user.id,
-      day: session.day,
-      completed_at: null,
-      completed_drill_ids: [],
-    }))
-  );
+      token,
+      guardian_name: guardianName!,
+      guardian_email: guardianEmail!,
+      intake: result.data,
+      status: "pending",
+      confirmed_at: null,
+    });
+    await sendGuardianConsentEmail({ guardianEmail: guardianEmail!, guardianName: guardianName!, token });
+    return NextResponse.json({ status: "pending_guardian_consent" }, { status: 202 });
+  }
 
+  const plan = await generateAndPersistPlan(supabase, user.id, result.data);
   return NextResponse.json(plan);
 }

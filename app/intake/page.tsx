@@ -57,8 +57,12 @@ export default function IntakePage() {
   const [profile, setProfile] = useState<ProfileForm>(initialProfile);
   const [goalsAndAssessment, setGoalsAndAssessment] = useState<GoalsAndAssessment>(initialGoals);
   const [waiverAccepted, setWaiverAccepted] = useState(false);
+  const [guardianName, setGuardianName] = useState<string | null>(null);
+  const [guardianEmail, setGuardianEmail] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  const isMinorPlayer = profile.account_type === "player" && profile.age < 18;
 
   function goNext() {
     setError(null);
@@ -84,6 +88,14 @@ export default function IntakePage() {
 
   async function handleSubmit() {
     setError(null);
+    if (isMinorPlayer && !guardianName?.trim()) {
+      setError("A parent or guardian must enter their name to accept the waiver for a player under 18");
+      return;
+    }
+    if (isMinorPlayer && !guardianEmail?.trim()) {
+      setError("A parent or guardian email is required to send the confirmation for a player under 18");
+      return;
+    }
     if (!waiverAccepted) {
       setError("You must acknowledge the waiver to continue");
       return;
@@ -93,6 +105,8 @@ export default function IntakePage() {
       profile: { id: crypto.randomUUID(), ...profile },
       goalsAndAssessment,
       waiverAccepted,
+      guardianName,
+      guardianEmail,
     };
 
     // Save now (not just on success) so /plan can pick this up and finish
@@ -147,8 +161,14 @@ export default function IntakePage() {
       )}
       {step === 3 && (
         <SafetyStep
+          accountType={profile.account_type}
+          age={profile.age}
           injuryNotes={profile.injury_notes}
           onInjuryNotesChange={(val) => setProfile({ ...profile, injury_notes: val })}
+          guardianName={guardianName}
+          onGuardianNameChange={setGuardianName}
+          guardianEmail={guardianEmail}
+          onGuardianEmailChange={setGuardianEmail}
           waiverAccepted={waiverAccepted}
           onWaiverChange={setWaiverAccepted}
         />
@@ -202,7 +222,13 @@ export default function IntakePage() {
                 <Button onClick={goNext}>Next</Button>
               ) : (
                 <Button onClick={handleSubmit} disabled={submitting}>
-                  {submitting ? "Building your plan..." : "Generate my plan"}
+                  {submitting
+                    ? isMinorPlayer
+                      ? "Sending..."
+                      : "Building your plan..."
+                    : isMinorPlayer
+                      ? "Send for guardian confirmation"
+                      : "Generate my plan"}
                 </Button>
               )}
             </div>

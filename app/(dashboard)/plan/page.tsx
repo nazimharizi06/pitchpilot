@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CalendarDays, Flame, Target, Clock, ListChecks } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -19,6 +19,7 @@ import { StatCard } from "@/components/dashboard/StatCard";
 import { DrillChecklistItem } from "@/components/dashboard/DrillChecklistItem";
 import { LoadingScreen } from "@/components/dashboard/LoadingScreen";
 import { PlanGeneratingScreen } from "@/components/dashboard/PlanGeneratingScreen";
+import { WaitingForGuardianScreen } from "@/components/dashboard/WaitingForGuardianScreen";
 import type { Drill, PlanDrillEntry } from "@/lib/types";
 
 // Delays between retries when generating from a saved-but-not-yet-generated
@@ -26,12 +27,40 @@ import type { Drill, PlanDrillEntry } from "@/lib/types";
 // redirect and the webhook updating subscription status.
 const RETRY_DELAYS_MS = [1000, 2000, 3000];
 
+// How often to re-check for a plan while waiting on a parent/guardian to click
+// the confirmation email — unlike the webhook race above, this has no bounded
+// duration, so it polls the same tab indefinitely rather than retrying a fixed
+// number of times. See lib/planGeneration.ts / app/api/guardian-consent/confirm.
+const GUARDIAN_POLL_INTERVAL_MS = 8000;
+
 export default function MyPlanPage() {
   const router = useRouter();
   const [state, setState] = useState<PlanState | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
+  const [awaitingGuardian, setAwaitingGuardian] = useState(false);
+  const [awaitingGuardianName, setAwaitingGuardianName] = useState<string | null>(null);
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (pollingRef.current) clearInterval(pollingRef.current);
+    };
+  }, []);
+
+  function startPolling() {
+    if (pollingRef.current) return;
+    pollingRef.current = setInterval(async () => {
+      const result = await fetchState();
+      if (result?.loadedState) {
+        if (pollingRef.current) clearInterval(pollingRef.current);
+        pollingRef.current = null;
+        setState(result.loadedState);
+        setAwaitingGuardian(false);
+      }
+    }, GUARDIAN_POLL_INTERVAL_MS);
+  }
 
   async function fetchState() {
     const supabase = createClient();
@@ -63,6 +92,19 @@ export default function MyPlanPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(intake),
         });
+
+        if (res.status === 202) {
+          const body = await res.json().catch(() => ({}));
+          if (body.status === "pending_guardian_consent") {
+            clearAll();
+            setGenerating(false);
+            setAwaitingGuardianName(intake.guardianName ?? null);
+            setAwaitingGuardian(true);
+            setLoaded(true);
+            startPolling();
+            return;
+          }
+        }
 
         if (res.ok) {
           clearAll();
@@ -104,6 +146,24 @@ export default function MyPlanPage() {
         setLoaded(true);
         return;
       }
+
+      // Before falling back to a staged-intake retry, check whether a guardian
+      // consent request is already pending for this user (e.g. they closed the
+      // tab and came back — there's nothing in localStorage to fall back to,
+      // but the request is already sitting server-side).
+      const { data: guardianRow } = await result.supabase
+        .from("guardian_verifications")
+        .select("status, guardian_name")
+        .eq("user_id", result.user.id)
+        .maybeSingle();
+      if (guardianRow?.status === "pending") {
+        setAwaitingGuardianName(guardianRow.guardian_name);
+        setAwaitingGuardian(true);
+        setLoaded(true);
+        startPolling();
+        return;
+      }
+
       await generateFromSavedIntake();
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -140,6 +200,10 @@ export default function MyPlanPage() {
 
   if (generating) {
     return <PlanGeneratingScreen />;
+  }
+
+  if (awaitingGuardian) {
+    return <WaitingForGuardianScreen guardianName={awaitingGuardianName} />;
   }
 
   if (generateError) {

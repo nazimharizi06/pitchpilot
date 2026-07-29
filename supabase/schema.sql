@@ -84,3 +84,20 @@ create table public.trial_usage (
 alter table public.trial_usage enable row level security;
 create index trial_usage_email_idx on public.trial_usage (email);
 create index trial_usage_phone_idx on public.trial_usage (phone);
+
+-- One pending/confirmed guardian-consent request per user (retaking intake as a minor
+-- replaces it with a fresh token+intake). Created + confirmed only by server-side code
+-- using the service-role key — no insert/update policy for the browser client.
+create table public.guardian_verifications (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  token text not null unique,
+  guardian_name text not null,
+  guardian_email text not null,
+  intake jsonb not null,
+  status text not null default 'pending' check (status in ('pending', 'confirmed')),
+  created_at timestamptz not null default now(),
+  confirmed_at timestamptz
+);
+alter table public.guardian_verifications enable row level security;
+create policy "Users can read their own guardian verification" on public.guardian_verifications
+  for select using (auth.uid() = user_id);
