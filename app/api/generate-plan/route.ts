@@ -7,6 +7,13 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getActiveSubscription, meetsTier } from "@/lib/subscriptions";
 
+// A 3-week plan can make up to ~21 Claude calls (batched, see generatePlan.ts),
+// which can run past Vercel's default timeout. This raises the ceiling on plans
+// that support configuring it — Hobby is hard-capped at 10s regardless, so this
+// alone isn't sufficient there; the batching in generatePlan.ts is what actually
+// keeps wall-clock time down on any plan.
+export const maxDuration = 60;
+
 export async function POST(request: Request) {
   const supabase = await createClient();
   const {

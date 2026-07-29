@@ -3,6 +3,10 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { generateAndPersistPlan } from "@/lib/planGeneration";
 import type { IntakeData } from "@/lib/types";
 
+// Same reasoning as app/api/generate-plan/route.ts — this also calls
+// generateAndPersistPlan, which can take a while for a 3-week plan.
+export const maxDuration = 60;
+
 // Public, no-auth route — the parent clicking this link is very likely not signed
 // into a PitchPilot session (may not even have an account), possibly on a
 // different device than the player. See lib/planGeneration.ts for why this uses

@@ -41,6 +41,23 @@ function candidateBelongsToGoal(drill: Drill, goal: SkillCategory): boolean {
   return drill.categories.includes(goal);
 }
 
+// Runs explainSession calls in small parallel batches rather than one giant
+// Promise.all — a 3-week plan can be up to 21 days, and firing all 21 Claude
+// calls at once risks tripping a lower-tier account's concurrent-request/RPM
+// limit. Batches of 5 still cut a 21-call sequential chain down to ~5 rounds.
+async function mapWithConcurrency<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
+  const results: R[] = new Array(items.length);
+  let next = 0;
+  async function worker() {
+    while (next < items.length) {
+      const i = next++;
+      results[i] = await fn(items[i]);
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+  return results;
+}
+
 export async function generatePlan(intake: IntakeData, aiProvider: AIProvider = mockProvider): Promise<Plan> {
   const { profile, goalsAndAssessment } = intake;
   const { goals, self_ratings, days_per_week, space_available, equipment_available } = goalsAndAssessment;
@@ -68,12 +85,30 @@ export async function generatePlan(intake: IntakeData, aiProvider: AIProvider = 
   const coolDownPool = filterWarmupOrCooldown(drills, "cool_down", equipment_available, space_available);
 
   const usedCounts = new Map<string, number>();
-  const sessions: PlanSession[] = [];
 
   // 3 weeks of sessions per intake, so a subscriber only needs to retake intake
   // once they've actually finished a full program — see app/api/generate-plan/route.ts
   // for the Pro-tier completion gate this enables.
   const totalDays = days_per_week * 3;
+
+  // Drill selection (below) has to stay sequential — each day's picks depend on
+  // usedCounts from every day before it, to avoid repeating the same drills too
+  // often across a 3-week program. explainSession does NOT have that dependency
+  // (it only describes a day's already-chosen drills), so it's deliberately
+  // pulled out of this loop and fired in parallel afterward — with claudeProvider,
+  // this was previously one real Claude API call per day, awaited one at a time,
+  // which made a 3-week plan (9-21 days) take 9-21x a single call's latency in a
+  // row — long enough to exceed Vercel's default function timeout on some plans.
+  interface DayDraft {
+    day: number;
+    theme: SkillCategory;
+    themeLevel: Level;
+    sessionDrills: Drill[];
+    blendedThemeLabels: string[];
+    totalMinutes: number;
+  }
+
+  const drafts: DayDraft[] = [];
 
   for (let day = 0; day < totalDays; day++) {
     const theme = rotation[day % rotation.length];
@@ -110,25 +145,29 @@ export async function generatePlan(intake: IntakeData, aiProvider: AIProvider = 
       .filter((g) => g !== theme && assembled.main.some((d) => candidateBelongsToGoal(d, g)))
       .map((g) => SKILL_CATEGORY_LABELS[g]);
 
-    const explanation = await aiProvider.explainSession({
-      theme,
-      themeLabel: SKILL_CATEGORY_LABELS[theme],
-      level: themeLevel,
-      drills: sessionDrills,
-      profile,
-      blendedThemeLabels,
-    });
-
-    sessions.push({
-      day: day + 1,
-      week: Math.floor(day / days_per_week) + 1,
-      theme: SKILL_CATEGORY_LABELS[theme],
-      drills: sessionDrills.map((d) => ({ drillId: d.id, reps_duration: d.reps_duration })),
-      target_duration_minutes: assembled.totalMinutes,
-      explanation,
-      source: "ai",
-    });
+    drafts.push({ day, theme, themeLevel, sessionDrills, blendedThemeLabels, totalMinutes: assembled.totalMinutes });
   }
+
+  const explanations = await mapWithConcurrency(drafts, 5, (d) =>
+    aiProvider.explainSession({
+      theme: d.theme,
+      themeLabel: SKILL_CATEGORY_LABELS[d.theme],
+      level: d.themeLevel,
+      drills: d.sessionDrills,
+      profile,
+      blendedThemeLabels: d.blendedThemeLabels,
+    })
+  );
+
+  const sessions: PlanSession[] = drafts.map((d, i) => ({
+    day: d.day + 1,
+    week: Math.floor(d.day / days_per_week) + 1,
+    theme: SKILL_CATEGORY_LABELS[d.theme],
+    drills: d.sessionDrills.map((drill) => ({ drillId: drill.id, reps_duration: drill.reps_duration })),
+    target_duration_minutes: d.totalMinutes,
+    explanation: explanations[i],
+    source: "ai",
+  }));
 
   return {
     sessions,
