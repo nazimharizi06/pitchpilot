@@ -69,9 +69,21 @@ export async function POST(request: Request) {
     .eq("user_id", user.id)
     .maybeSingle();
 
-  const customerId =
-    existing?.stripe_customer_id ??
-    (await stripe.customers.create({ email: user.email, metadata: { supabase_user_id: user.id } })).id;
+  // A stored customer ID can go stale (e.g. manually deleted in the Stripe
+  // dashboard while clearing test data) — verify it still exists before reusing
+  // it, rather than letting checkout.sessions.create fail with "No such customer".
+  let customerId: string | null = null;
+  if (existing?.stripe_customer_id) {
+    try {
+      const customer = await stripe.customers.retrieve(existing.stripe_customer_id);
+      if (!customer.deleted) customerId = customer.id;
+    } catch {
+      // Stale/missing customer — fall through to creating a fresh one below.
+    }
+  }
+  if (!customerId) {
+    customerId = (await stripe.customers.create({ email: user.email, metadata: { supabase_user_id: user.id } })).id;
+  }
 
   const site = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
   const session = await stripe.checkout.sessions.create({

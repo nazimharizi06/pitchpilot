@@ -41,7 +41,7 @@ export default async function DrillsPage() {
                 <div className="flex flex-col gap-3">
                   {categoryDrills.map((drill) => (
                     <div key={drill.id} className="relative">
-                      <div className="absolute top-3 right-3 z-10">
+                      <div className="absolute top-10 right-3 z-10">
                         <FavoriteButton drillId={drill.id} initialFavorited={favoritedIds.has(drill.id)} />
                       </div>
                       <DrillCard drill={drill} repsDuration={drill.reps_duration} />
