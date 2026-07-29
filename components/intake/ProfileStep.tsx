@@ -6,6 +6,13 @@ import { Field, darkInputClass } from "@/components/ui/Field";
 
 export type ProfileForm = Omit<UserProfile, "id">;
 
+// Scrollable <select> lists instead of number-input spinners — easier to pick
+// a value on both desktop and mobile than the tiny native up/down arrows.
+const AGE_OPTIONS = Array.from({ length: 96 }, (_, i) => i + 5); // 5..100, matches profileSchema
+const FEET_OPTIONS = [2, 3, 4, 5, 6, 7];
+const INCHES_OPTIONS = Array.from({ length: 12 }, (_, i) => i); // 0..11 — never rolls into a whole foot
+const WEIGHT_OPTIONS = Array.from({ length: 261 }, (_, i) => i + 40); // 40..300 lb
+
 export function ProfileStep({
   value,
   onChange,
@@ -14,6 +21,9 @@ export function ProfileStep({
   onChange: (next: ProfileForm) => void;
 }) {
   const set = <K extends keyof ProfileForm>(key: K, val: ProfileForm[K]) => onChange({ ...value, [key]: val });
+
+  const feet = Math.floor(value.height_in / 12);
+  const inches = value.height_in % 12;
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -29,14 +39,13 @@ export function ProfileStep({
       </Field>
 
       <Field dark label="Age">
-        <input
-          type="number"
-          className={darkInputClass}
-          value={value.age}
-          min={5}
-          max={100}
-          onChange={(e) => set("age", Number(e.target.value))}
-        />
+        <select className={darkInputClass} value={value.age} onChange={(e) => set("age", Number(e.target.value))}>
+          {AGE_OPTIONS.map((age) => (
+            <option key={age} value={age}>
+              {age}
+            </option>
+          ))}
+        </select>
       </Field>
 
       <Field dark label="Gender">
@@ -70,24 +79,45 @@ export function ProfileStep({
         </select>
       </Field>
 
-      <Field dark label="Height (inches)">
-        <input
-          type="number"
-          className={darkInputClass}
-          value={value.height_in}
-          min={1}
-          onChange={(e) => set("height_in", Number(e.target.value))}
-        />
+      <Field dark label="Height">
+        <div className="flex gap-2">
+          <select
+            className={`${darkInputClass} flex-1`}
+            value={feet}
+            onChange={(e) => set("height_in", Number(e.target.value) * 12 + inches)}
+          >
+            {FEET_OPTIONS.map((f) => (
+              <option key={f} value={f}>
+                {f} ft
+              </option>
+            ))}
+          </select>
+          <select
+            className={`${darkInputClass} flex-1`}
+            value={inches}
+            onChange={(e) => set("height_in", feet * 12 + Number(e.target.value))}
+          >
+            {INCHES_OPTIONS.map((i) => (
+              <option key={i} value={i}>
+                {i} in
+              </option>
+            ))}
+          </select>
+        </div>
       </Field>
 
       <Field dark label="Weight (lb)">
-        <input
-          type="number"
+        <select
           className={darkInputClass}
           value={value.weight_lb}
-          min={1}
           onChange={(e) => set("weight_lb", Number(e.target.value))}
-        />
+        >
+          {WEIGHT_OPTIONS.map((w) => (
+            <option key={w} value={w}>
+              {w}
+            </option>
+          ))}
+        </select>
       </Field>
 
       <Field dark label="Position (optional)">
