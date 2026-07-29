@@ -8,24 +8,32 @@ import { PhoneNumberModal } from "@/components/landing/PhoneNumberModal";
 import { ComparisonTable } from "@/components/landing/ComparisonTable";
 import type { SubscriptionTier } from "@/lib/subscriptions";
 
+type BillingInterval = "monthly" | "annual";
+
 const TIERS: {
   id: SubscriptionTier;
   name: string;
-  price: string;
+  monthlyPrice: number;
+  annualMonthlyPrice: number;
+  annualBilledPrice: number;
   popular: boolean;
   features: string[];
 }[] = [
   {
     id: "base",
     name: "Base",
-    price: "$10",
+    monthlyPrice: 10,
+    annualMonthlyPrice: 8,
+    annualBilledPrice: 96,
     popular: false,
     features: ["Browse the full drill library", "Filter by skill, level, equipment, and space"],
   },
   {
     id: "pro",
     name: "Pro",
-    price: "$20",
+    monthlyPrice: 20,
+    annualMonthlyPrice: 16,
+    annualBilledPrice: 192,
     popular: true,
     features: [
       "Everything in Base",
@@ -37,7 +45,9 @@ const TIERS: {
   {
     id: "premium",
     name: "Premium",
-    price: "$50",
+    monthlyPrice: 50,
+    annualMonthlyPrice: 40,
+    annualBilledPrice: 480,
     popular: false,
     features: [
       "Everything in Pro",
@@ -49,19 +59,20 @@ const TIERS: {
 ];
 
 export function PricingSection() {
+  const [interval, setBillingInterval] = useState<BillingInterval>("monthly");
   const [loadingTier, setLoadingTier] = useState<SubscriptionTier | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [phonePromptTier, setPhonePromptTier] = useState<SubscriptionTier | null>(null);
+  const [phonePrompt, setPhonePrompt] = useState<{ tier: SubscriptionTier; interval: BillingInterval } | null>(null);
 
-  async function startCheckout(tier: SubscriptionTier, phone?: string) {
+  async function startCheckout(tier: SubscriptionTier, billingInterval: BillingInterval, phone?: string) {
     setError(null);
-    if (!phone) track("start_trial_click", { location: "pricing", tier });
+    if (!phone) track("start_trial_click", { location: "pricing", tier, interval: billingInterval });
     setLoadingTier(tier);
     try {
       const res = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tier, phone }),
+        body: JSON.stringify({ tier, interval: billingInterval, phone }),
       });
       if (res.status === 401) {
         window.location.assign("/login?next=/%23pricing");
@@ -70,7 +81,7 @@ export function PricingSection() {
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         if (body.error === "phone_required") {
-          setPhonePromptTier(tier);
+          setPhonePrompt({ tier, interval: billingInterval });
           setLoadingTier(null);
           return;
         }
@@ -85,10 +96,10 @@ export function PricingSection() {
   }
 
   function handlePhoneSubmit(phone: string) {
-    if (!phonePromptTier) return;
-    const tier = phonePromptTier;
-    setPhonePromptTier(null);
-    startCheckout(tier, phone);
+    if (!phonePrompt) return;
+    const { tier, interval: billingInterval } = phonePrompt;
+    setPhonePrompt(null);
+    startCheckout(tier, billingInterval, phone);
   }
 
   return (
@@ -99,7 +110,35 @@ export function PricingSection() {
           <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight text-white mb-3">
             Start free. Stay if it&apos;s working.
           </h2>
-          <p className="text-zinc-400">7 days free. Cancel before the trial ends and you won&apos;t be charged.</p>
+          <p className="text-zinc-400 mb-8">7 days free. Cancel before the trial ends and you won&apos;t be charged.</p>
+
+          <div className="inline-flex items-center rounded-full border border-zinc-800 bg-zinc-900/60 p-1">
+            <button
+              type="button"
+              onClick={() => setBillingInterval("monthly")}
+              className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+                interval === "monthly" ? "bg-emerald-600 text-white" : "text-zinc-400 hover:text-white"
+              }`}
+            >
+              Monthly
+            </button>
+            <button
+              type="button"
+              onClick={() => setBillingInterval("annual")}
+              className={`flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+                interval === "annual" ? "bg-emerald-600 text-white" : "text-zinc-400 hover:text-white"
+              }`}
+            >
+              Annual
+              <span
+                className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                  interval === "annual" ? "bg-emerald-950/60 text-emerald-100" : "bg-emerald-950/60 text-emerald-400"
+                }`}
+              >
+                Save 20%
+              </span>
+            </button>
+          </div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 items-start">
           {TIERS.map((tier) => (
@@ -117,9 +156,15 @@ export function PricingSection() {
                 </span>
               )}
               <h3 className="font-semibold text-white mb-1">{tier.name}</h3>
-              <p className="text-3xl font-semibold text-white mb-5">
-                {tier.price}
-                <span className="text-sm font-normal text-zinc-400">/mo</span>
+              <div className="mb-1 flex items-baseline gap-2">
+                <p className="text-3xl font-semibold text-white">
+                  ${interval === "annual" ? tier.annualMonthlyPrice : tier.monthlyPrice}
+                  <span className="text-sm font-normal text-zinc-400">/mo</span>
+                </p>
+                {interval === "annual" && <p className="text-sm text-zinc-500 line-through">${tier.monthlyPrice}</p>}
+              </div>
+              <p className="text-xs text-zinc-500 mb-5">
+                {interval === "annual" ? `Billed $${tier.annualBilledPrice}/year` : "Billed monthly"}
               </p>
               <ul className="flex flex-col gap-3 mb-6 flex-1">
                 {tier.features.map((f) => (
@@ -133,7 +178,7 @@ export function PricingSection() {
                 variant={tier.popular ? "primary" : "outlineDark"}
                 className="w-full"
                 disabled={loadingTier !== null}
-                onClick={() => startCheckout(tier.id)}
+                onClick={() => startCheckout(tier.id, interval)}
               >
                 {loadingTier === tier.id ? "Redirecting..." : "Start free trial"}
               </Button>
@@ -151,11 +196,11 @@ export function PricingSection() {
         </p>
         <ComparisonTable />
       </div>
-      {phonePromptTier && (
+      {phonePrompt && (
         <PhoneNumberModal
-          submitting={loadingTier === phonePromptTier}
+          submitting={loadingTier === phonePrompt.tier}
           onSubmit={handlePhoneSubmit}
-          onCancel={() => setPhonePromptTier(null)}
+          onCancel={() => setPhonePrompt(null)}
         />
       )}
     </section>

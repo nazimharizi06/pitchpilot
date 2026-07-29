@@ -6,10 +6,12 @@ import { phoneSchema } from "@/lib/validation";
 import { normalizePhone } from "@/lib/phone";
 import type { SubscriptionTier } from "@/lib/subscriptions";
 
-const PRICE_BY_TIER: Record<SubscriptionTier, string | undefined> = {
-  base: process.env.STRIPE_PRICE_BASE,
-  pro: process.env.STRIPE_PRICE_PRO,
-  premium: process.env.STRIPE_PRICE_PREMIUM,
+type BillingInterval = "monthly" | "annual";
+
+const PRICE_BY_TIER: Record<SubscriptionTier, Record<BillingInterval, string | undefined>> = {
+  base: { monthly: process.env.STRIPE_PRICE_BASE, annual: process.env.STRIPE_PRICE_BASE_ANNUAL },
+  pro: { monthly: process.env.STRIPE_PRICE_PRO, annual: process.env.STRIPE_PRICE_PRO_ANNUAL },
+  premium: { monthly: process.env.STRIPE_PRICE_PREMIUM, annual: process.env.STRIPE_PRICE_PREMIUM_ANNUAL },
 };
 
 export async function POST(request: Request) {
@@ -24,7 +26,8 @@ export async function POST(request: Request) {
 
   const body = await request.json().catch(() => null);
   const tier = body?.tier as SubscriptionTier | undefined;
-  const priceId = tier && PRICE_BY_TIER[tier];
+  const interval: BillingInterval = body?.interval === "annual" ? "annual" : "monthly";
+  const priceId = tier && PRICE_BY_TIER[tier][interval];
   if (!priceId) {
     return NextResponse.json({ error: "Invalid plan" }, { status: 400 });
   }

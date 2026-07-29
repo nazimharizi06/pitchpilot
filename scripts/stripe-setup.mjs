@@ -31,11 +31,32 @@ if (!process.env.STRIPE_SECRET_KEY) {
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
+// Annual price = 20% off the monthly rate, billed yearly (e.g. Base $10/mo -> $96/yr, a $8/mo equivalent).
 const TIERS = [
-  { envVar: "STRIPE_PRICE_BASE", name: "PitchPilot Base", amount: 1000 },
-  { envVar: "STRIPE_PRICE_PRO", name: "PitchPilot Pro", amount: 2000 },
-  { envVar: "STRIPE_PRICE_PREMIUM", name: "PitchPilot Premium", amount: 5000 },
+  { envVar: "STRIPE_PRICE_BASE", annualEnvVar: "STRIPE_PRICE_BASE_ANNUAL", name: "PitchPilot Base", amount: 1000, annualAmount: 9600 },
+  { envVar: "STRIPE_PRICE_PRO", annualEnvVar: "STRIPE_PRICE_PRO_ANNUAL", name: "PitchPilot Pro", amount: 2000, annualAmount: 19200 },
+  { envVar: "STRIPE_PRICE_PREMIUM", annualEnvVar: "STRIPE_PRICE_PREMIUM_ANNUAL", name: "PitchPilot Premium", amount: 5000, annualAmount: 48000 },
 ];
+
+async function findOrCreatePrice(product, { amount, interval, label }) {
+  const existingPrices = await stripe.prices.list({ product: product.id, active: true, limit: 100 });
+  let price = existingPrices.data.find(
+    (p) => p.unit_amount === amount && p.recurring?.interval === interval && p.currency === "usd"
+  );
+
+  if (!price) {
+    price = await stripe.prices.create({
+      product: product.id,
+      unit_amount: amount,
+      currency: "usd",
+      recurring: { interval },
+    });
+    console.log(`Created price: ${label} (${price.id})`);
+  } else {
+    console.log(`Reusing existing price: ${label} (${price.id})`);
+  }
+  return price;
+}
 
 const results = [];
 
@@ -50,24 +71,19 @@ for (const tier of TIERS) {
     console.log(`Reusing existing product: ${tier.name} (${product.id})`);
   }
 
-  const existingPrices = await stripe.prices.list({ product: product.id, active: true, limit: 100 });
-  let price = existingPrices.data.find(
-    (p) => p.unit_amount === tier.amount && p.recurring?.interval === "month" && p.currency === "usd"
-  );
+  const monthlyPrice = await findOrCreatePrice(product, {
+    amount: tier.amount,
+    interval: "month",
+    label: `$${tier.amount / 100}/mo`,
+  });
+  const annualPrice = await findOrCreatePrice(product, {
+    amount: tier.annualAmount,
+    interval: "year",
+    label: `$${tier.annualAmount / 100}/yr`,
+  });
 
-  if (!price) {
-    price = await stripe.prices.create({
-      product: product.id,
-      unit_amount: tier.amount,
-      currency: "usd",
-      recurring: { interval: "month" },
-    });
-    console.log(`Created price: $${tier.amount / 100}/mo (${price.id})`);
-  } else {
-    console.log(`Reusing existing price: $${tier.amount / 100}/mo (${price.id})`);
-  }
-
-  results.push({ envVar: tier.envVar, priceId: price.id });
+  results.push({ envVar: tier.envVar, priceId: monthlyPrice.id });
+  results.push({ envVar: tier.annualEnvVar, priceId: annualPrice.id });
 }
 
 console.log("\nPaste these into .env.local:\n");

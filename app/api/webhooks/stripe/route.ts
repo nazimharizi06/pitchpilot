@@ -5,10 +5,16 @@ import { getStripe } from "@/lib/stripe/client";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { SubscriptionTier } from "@/lib/subscriptions";
 
+// Both the monthly and annual Price for a tier must map to the same tier here —
+// otherwise an annual subscriber gets `tier: null` written below and every
+// meetsTier() check in the app breaks for them. See scripts/stripe-setup.mjs.
 const TIER_BY_PRICE: Partial<Record<string, SubscriptionTier>> = {
   [process.env.STRIPE_PRICE_BASE ?? ""]: "base",
+  [process.env.STRIPE_PRICE_BASE_ANNUAL ?? ""]: "base",
   [process.env.STRIPE_PRICE_PRO ?? ""]: "pro",
+  [process.env.STRIPE_PRICE_PRO_ANNUAL ?? ""]: "pro",
   [process.env.STRIPE_PRICE_PREMIUM ?? ""]: "premium",
+  [process.env.STRIPE_PRICE_PREMIUM_ANNUAL ?? ""]: "premium",
 };
 
 // Subscription billing-period fields live per-item (not on the subscription
