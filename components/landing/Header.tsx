@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { UserMenu } from "@/components/auth/UserMenu";
@@ -16,9 +17,7 @@ export function Header({ dark = false }: { dark?: boolean }) {
     >
       <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
         <Link href="/" className={`flex items-center gap-2 font-semibold ${dark ? "text-white" : "text-zinc-900 dark:text-zinc-50"}`}>
-          <span className="h-7 w-7 rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white text-sm font-bold">
-            P
-          </span>
+          <Image src="/brand/pitchpilot-icon.png" alt="" width={28} height={28} className="rounded-lg" />
           PitchPilot
         </Link>
         <nav className={`hidden sm:flex items-center gap-8 text-sm font-medium ${dark ? "text-zinc-400" : "text-zinc-600 dark:text-zinc-400"}`}>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { Target, ClipboardList, TrendingUp, CalendarCheck, ListChecks, Repeat2 } from "lucide-react";
 
 // Cosmetic step labels loosely describing the real phases of
@@ -67,7 +68,9 @@ export function PlanGeneratingScreen() {
         <div className="relative h-20 w-20 mx-auto mb-6">
           <div className="absolute inset-0 rounded-full border-4 border-zinc-800" />
           <div className="absolute inset-0 rounded-full border-4 border-emerald-500 border-t-transparent animate-spin" />
-          <div className="absolute inset-0 flex items-center justify-center text-emerald-400 font-bold text-xl">P</div>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <Image src="/brand/pitchpilot-icon.png" alt="" width={44} height={44} className="rounded-lg" />
+          </div>
         </div>
         <h2 className="text-xl font-semibold text-white mb-2">Crafting your plan...</h2>
         <p className="text-sm text-zinc-400 mb-6">

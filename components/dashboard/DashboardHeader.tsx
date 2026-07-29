@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 
@@ -12,9 +13,7 @@ export async function DashboardHeader() {
     <header className="sticky top-0 z-40 border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-md">
       <div className="px-6 h-16 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2 font-semibold text-white">
-          <span className="h-7 w-7 rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white text-sm font-bold">
-            P
-          </span>
+          <Image src="/brand/pitchpilot-icon.png" alt="" width={28} height={28} className="rounded-lg" />
           PitchPilot
         </Link>
         <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-zinc-400">

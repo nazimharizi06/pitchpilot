@@ -13,8 +13,20 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),
   title: "PitchPilot — Personalized Soccer Training Plans",
   description: "Personalized soccer skill training plans built from real coaching experience.",
+  openGraph: {
+    title: "PitchPilot — Personalized Soccer Training Plans",
+    description: "Personalized soccer skill training plans built from real coaching experience.",
+    images: ["/brand/pitchpilot-logo-full.png"],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "PitchPilot — Personalized Soccer Training Plans",
+    description: "Personalized soccer skill training plans built from real coaching experience.",
+    images: ["/brand/pitchpilot-logo-full.png"],
+  },
 };
 
 export default function RootLayout({
