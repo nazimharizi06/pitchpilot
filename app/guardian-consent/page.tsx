@@ -5,17 +5,17 @@ const STATUS_COPY = {
   confirmed: {
     icon: CheckCircle2,
     title: "Thanks — you're all set",
-    body: "The training plan is being created now. The player can check their PitchPilot account to see it.",
+    body: "The player can go back to their PitchPilot account now — it's ready for them.",
   },
   already_confirmed: {
     icon: CheckCircle2,
     title: "Already confirmed",
-    body: "This request was already confirmed. The player's training plan should already be ready.",
+    body: "This request was already confirmed. The player's account should already be ready.",
   },
   invalid: {
     icon: XCircle,
     title: "This link isn't valid",
-    body: "This confirmation link is invalid or has expired. Ask the player to retake the intake to send a fresh one.",
+    body: "This confirmation link is invalid or has expired. Ask the player to send a fresh request from their account.",
   },
 } as const;
 

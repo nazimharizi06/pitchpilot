@@ -18,7 +18,7 @@ export async function GET(request: Request) {
 
   const { data: row } = await admin
     .from("guardian_verifications")
-    .select("user_id, status, intake")
+    .select("user_id, status, intake, purpose")
     .eq("token", token)
     .maybeSingle();
 
@@ -35,7 +35,16 @@ export async function GET(request: Request) {
     .update({ status: "confirmed", confirmed_at: new Date().toISOString() })
     .eq("token", token);
 
-  await generateAndPersistPlan(admin, row.user_id, row.intake as IntakeData);
+  if (row.purpose === "waiver_only") {
+    // Base tier's inline builder waiver — there's no intake to generate a plan from,
+    // just record that a guardian accepted the waiver on the minor's behalf.
+    await admin
+      .from("subscriptions")
+      .update({ waiver_accepted: true, waiver_accepted_at: new Date().toISOString() })
+      .eq("user_id", row.user_id);
+  } else {
+    await generateAndPersistPlan(admin, row.user_id, row.intake as IntakeData);
+  }
 
   return NextResponse.redirect(`${origin}/guardian-consent?status=confirmed`);
 }

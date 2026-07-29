@@ -8,14 +8,15 @@ export interface SessionProgressRow {
 }
 
 export interface PlanState {
-  intake: IntakeData;
+  // Null for a purely self-built plan (Base tier, which skips /intake entirely) —
+  // see PlanSession["source"] in lib/types.ts.
+  intake: IntakeData | null;
   plan: Plan;
   progress: SessionProgressRow[];
 }
 
 // Reads the signed-in user's current plan + per-day progress. Returns null if
-// they haven't generated a plan yet (caller should fall back to the
-// staged-intake retry flow — see app/(dashboard)/plan/page.tsx).
+// they haven't generated (or built) a plan yet.
 export async function loadPlanState(supabase: SupabaseClient, userId: string): Promise<PlanState | null> {
   const { data: planRow } = await supabase.from("plans").select("intake, plan").eq("user_id", userId).maybeSingle();
   if (!planRow) return null;
@@ -27,10 +28,52 @@ export async function loadPlanState(supabase: SupabaseClient, userId: string): P
     .order("day", { ascending: true });
 
   return {
-    intake: planRow.intake as IntakeData,
+    intake: planRow.intake as IntakeData | null,
     plan: planRow.plan as Plan,
     progress: (progressRows ?? []) as SessionProgressRow[],
   };
+}
+
+// Adds (or replaces, if that day hasn't been completed yet) one manually-built session —
+// used by the workout builder (components/dashboard/WorkoutBuilder.tsx), available to every
+// tier. Creates the `plans` row from scratch if this is the user's first-ever session
+// (Base tier never runs /intake, so it never gets an AI-generated plan first).
+export async function addOrReplaceCustomSession(
+  supabase: SupabaseClient,
+  userId: string,
+  currentPlan: PlanState | null,
+  day: number,
+  session: PlanSession
+): Promise<{ error?: string }> {
+  const existingProgress = currentPlan?.progress.find((p) => p.day === day);
+  if (existingProgress?.completed_at) {
+    return { error: "That day is already completed and can't be rebuilt." };
+  }
+
+  const sessions = (currentPlan?.plan.sessions ?? []).filter((s) => s.day !== day);
+  sessions.push(session);
+  sessions.sort((a, b) => a.day - b.day);
+
+  const { error: planError } = await supabase.from("plans").upsert({
+    user_id: userId,
+    intake: currentPlan?.intake ?? null,
+    plan: {
+      sessions,
+      ai_weighting_notes: currentPlan?.plan.ai_weighting_notes ?? "",
+      generated_at: currentPlan?.plan.generated_at ?? new Date().toISOString(),
+    },
+    created_at: new Date().toISOString(),
+  });
+  if (planError) return { error: "Couldn't save your session. Please try again." };
+
+  await supabase.from("session_progress").upsert({
+    user_id: userId,
+    day,
+    completed_at: null,
+    completed_drill_ids: [],
+  });
+
+  return {};
 }
 
 export async function toggleDrillComplete(

@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, TrendingUp, CalendarDays, Heart, Settings, Zap, LogOut } from "lucide-react";
+import { LayoutDashboard, TrendingUp, CalendarDays, Heart, Settings, Zap, LogOut, Hammer } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 const NAV_ITEMS = [
   { href: "/plan", label: "My Plan", icon: LayoutDashboard },
+  { href: "/build", label: "Build a Workout", icon: Hammer },
   { href: "/progress", label: "Progress", icon: TrendingUp },
   { href: "/sessions", label: "Sessions", icon: CalendarDays },
   { href: "/favorites", label: "Favorites", icon: Heart },

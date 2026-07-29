@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { track } from "@vercel/analytics";
 import { Sparkles, Repeat2, ShieldCheck } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
+import { getActiveSubscription, meetsTier } from "@/lib/subscriptions";
 import { Header } from "@/components/landing/Header";
 import { StepIndicator } from "@/components/intake/StepIndicator";
 import { TipCard } from "@/components/intake/TipCard";
@@ -12,8 +14,9 @@ import { GoalsStep } from "@/components/intake/GoalsStep";
 import { AvailabilityStep } from "@/components/intake/AvailabilityStep";
 import { SafetyStep } from "@/components/intake/SafetyStep";
 import { Button } from "@/components/ui/Button";
+import { LoadingScreen } from "@/components/dashboard/LoadingScreen";
+import { PlanGeneratingScreen } from "@/components/dashboard/PlanGeneratingScreen";
 import { profileSchema, goalsStepSchema, availabilityStepSchema } from "@/lib/validation";
-import { saveIntake, clearAll } from "@/lib/storage";
 import type { GoalsAndAssessment, IntakeData } from "@/lib/types";
 
 const STEPS = ["Profile", "Goals", "Availability", "Safety"];
@@ -54,6 +57,7 @@ const initialGoals: GoalsAndAssessment = {
 
 export default function IntakePage() {
   const router = useRouter();
+  const [checkingAccess, setCheckingAccess] = useState(true);
   const [step, setStep] = useState(0);
   const [profile, setProfile] = useState<ProfileForm>(initialProfile);
   const [goalsAndAssessment, setGoalsAndAssessment] = useState<GoalsAndAssessment>(initialGoals);
@@ -64,6 +68,30 @@ export default function IntakePage() {
   const [submitting, setSubmitting] = useState(false);
 
   const isMinorPlayer = profile.account_type === "player" && profile.age < 18;
+
+  // Intake now runs after checkout, not before it — a user only ends up here
+  // already signed in and already Pro/Premium (routed by app/(dashboard)/plan/page.tsx).
+  // Still worth checking upfront rather than only on submit, so someone who lands
+  // here directly (a stale link, Base tier, or logged out) doesn't fill out the
+  // whole wizard before finding out they can't submit it.
+  useEffect(() => {
+    (async () => {
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
+        router.replace("/login?next=/intake");
+        return;
+      }
+      const subscription = await getActiveSubscription(supabase, user.id);
+      if (!meetsTier(subscription, "pro")) {
+        router.replace(subscription?.tier === "base" ? "/build" : "/#pricing");
+        return;
+      }
+      setCheckingAccess(false);
+    })();
+  }, [router]);
 
   function goNext() {
     setError(null);
@@ -110,10 +138,6 @@ export default function IntakePage() {
       guardianEmail,
     };
 
-    // Save now (not just on success) so /plan can pick this up and finish
-    // the job once the user signs up — see the not-signed-in/not-Pro branches below.
-    saveIntake(intake);
-
     setSubmitting(true);
     try {
       const res = await fetch("/api/generate-plan", {
@@ -123,7 +147,7 @@ export default function IntakePage() {
       });
 
       if (res.status === 401) {
-        window.location.assign("/login?next=/%23pricing");
+        window.location.assign("/login?next=/intake");
         return;
       }
       if (res.status === 403) {
@@ -134,9 +158,6 @@ export default function IntakePage() {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error ?? "Couldn't generate your plan. Please try again.");
       }
-      // The server persisted the plan directly (see /api/generate-plan) — the
-      // localStorage staging copy from above is no longer needed.
-      clearAll();
       track("intake_completed", { isMinorPlayer });
       router.push("/plan");
     } catch (err) {
@@ -144,6 +165,16 @@ export default function IntakePage() {
     } finally {
       setSubmitting(false);
     }
+  }
+
+  if (checkingAccess) {
+    return <LoadingScreen message="Loading..." />;
+  }
+
+  // Real AI generation only happens for the non-minor path (the minor path just
+  // sends a quick guardian-consent email, not a "crafting your plan" wait).
+  if (submitting && !isMinorPlayer) {
+    return <PlanGeneratingScreen />;
   }
 
   const copy = STEP_COPY[step];

@@ -13,15 +13,20 @@ const ACTIVE_STATUSES = new Set(["active", "trialing"]);
 export interface Subscription {
   tier: SubscriptionTier;
   status: string;
+  waiverAccepted: boolean;
 }
 
 // Reads via the passed-in client so the "users can read their own row" RLS
 // policy (see supabase/schema.sql) applies — no service-role key needed here.
 export async function getActiveSubscription(supabase: SupabaseClient, userId: string): Promise<Subscription | null> {
-  const { data } = await supabase.from("subscriptions").select("tier, status").eq("user_id", userId).maybeSingle();
+  const { data } = await supabase
+    .from("subscriptions")
+    .select("tier, status, waiver_accepted")
+    .eq("user_id", userId)
+    .maybeSingle();
 
   if (!data || !data.tier || !ACTIVE_STATUSES.has(data.status)) return null;
-  return { tier: data.tier as SubscriptionTier, status: data.status };
+  return { tier: data.tier as SubscriptionTier, status: data.status, waiverAccepted: Boolean(data.waiver_accepted) };
 }
 
 export function meetsTier(subscription: Subscription | null, required: SubscriptionTier): boolean {

@@ -9,7 +9,12 @@ create table public.subscriptions (
   tier text check (tier in ('base', 'pro', 'premium')),
   status text not null,
   current_period_end timestamptz,
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  -- Base tier skips the /intake wizard entirely (see components/dashboard/WorkoutBuilder.tsx),
+  -- so its waiver acceptance is recorded here instead, via app/api/accept-waiver/route.ts —
+  -- kept out of the browser-client RLS write surface, same as every other column on this table.
+  waiver_accepted boolean not null default false,
+  waiver_accepted_at timestamptz
 );
 
 alter table public.subscriptions enable row level security;
@@ -22,10 +27,13 @@ create policy "Users can read their own subscription"
   on public.subscriptions for select
   using (auth.uid() = user_id);
 
--- The current generated plan for a user. Regenerating (retake intake) replaces this row.
+-- The current plan for a user — either AI-generated (regenerating via /intake replaces
+-- this row) or self-built via the manual workout builder (see PlanSession.source in
+-- lib/types.ts). intake is nullable because a purely self-built plan (Base tier, which
+-- skips /intake entirely) has no real intake data to store.
 create table public.plans (
   user_id uuid primary key references auth.users(id) on delete cascade,
-  intake jsonb not null,
+  intake jsonb,
   plan jsonb not null,
   created_at timestamptz not null default now()
 );
@@ -88,12 +96,16 @@ create index trial_usage_phone_idx on public.trial_usage (phone);
 -- One pending/confirmed guardian-consent request per user (retaking intake as a minor
 -- replaces it with a fresh token+intake). Created + confirmed only by server-side code
 -- using the service-role key — no insert/update policy for the browser client.
+-- purpose='plan' (the /intake path): confirming generates the AI plan from `intake`.
+-- purpose='waiver_only' (Base tier's inline builder waiver, which has no intake to
+-- generate from): confirming just marks subscriptions.waiver_accepted = true.
 create table public.guardian_verifications (
   user_id uuid primary key references auth.users(id) on delete cascade,
   token text not null unique,
   guardian_name text not null,
   guardian_email text not null,
-  intake jsonb not null,
+  intake jsonb,
+  purpose text not null default 'plan' check (purpose in ('plan', 'waiver_only')),
   status text not null default 'pending' check (status in ('pending', 'confirmed')),
   created_at timestamptz not null default now(),
   confirmed_at timestamptz

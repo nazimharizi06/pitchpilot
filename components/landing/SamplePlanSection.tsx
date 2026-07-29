@@ -92,7 +92,7 @@ export function SamplePlanSection({ sessions }: { sessions: PlanSession[] }) {
               })}
             </div>
 
-            <Link href="/intake" className="block mt-6">
+            <Link href="/#pricing" className="block mt-6">
               <Button className="w-full sm:w-auto">Start your free trial</Button>
             </Link>
           </div>

@@ -106,7 +106,10 @@ export interface PlanSession {
   theme: string;
   drills: PlanDrillEntry[];
   target_duration_minutes: number;
+  // AI-written justification for "ai" sessions; for "custom" sessions this is never
+  // fabricated AI-style reasoning — it's blank or whatever the user typed themselves.
   explanation: string;
+  source: "ai" | "custom";
 }
 
 export interface Plan {

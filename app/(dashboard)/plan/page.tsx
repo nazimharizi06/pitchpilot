@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { track } from "@vercel/analytics";
 import { CalendarDays, Flame, Target, Clock, ListChecks } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { loadIntake, clearAll } from "@/lib/storage";
+import { getActiveSubscription } from "@/lib/subscriptions";
 import {
   computeStats,
   isDayUnlocked,
@@ -19,27 +19,26 @@ import { Button } from "@/components/ui/Button";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { DrillChecklistItem } from "@/components/dashboard/DrillChecklistItem";
 import { LoadingScreen } from "@/components/dashboard/LoadingScreen";
-import { PlanGeneratingScreen } from "@/components/dashboard/PlanGeneratingScreen";
 import { WaitingForGuardianScreen } from "@/components/dashboard/WaitingForGuardianScreen";
 import type { Drill, PlanDrillEntry } from "@/lib/types";
 
-// Delays between retries when generating from a saved-but-not-yet-generated
-// intake — absorbs the short lag between a successful Stripe checkout
-// redirect and the webhook updating subscription status.
+// Delays between retries while confirming subscription status — absorbs the short
+// lag between a successful Stripe checkout redirect and the webhook updating
+// subscriptions.status. Intake now happens *after* checkout on its own page (see
+// app/intake/page.tsx), once the subscription is already confirmed active, so
+// this page no longer needs to generate anything itself — only route.
 const RETRY_DELAYS_MS = [1000, 2000, 3000];
 
 // How often to re-check for a plan while waiting on a parent/guardian to click
 // the confirmation email — unlike the webhook race above, this has no bounded
 // duration, so it polls the same tab indefinitely rather than retrying a fixed
-// number of times. See lib/planGeneration.ts / app/api/guardian-consent/confirm.
+// number of times.
 const GUARDIAN_POLL_INTERVAL_MS = 8000;
 
 export default function MyPlanPage() {
   const router = useRouter();
   const [state, setState] = useState<PlanState | null>(null);
   const [loaded, setLoaded] = useState(false);
-  const [generating, setGenerating] = useState(false);
-  const [generateError, setGenerateError] = useState<string | null>(null);
   const [awaitingGuardian, setAwaitingGuardian] = useState(false);
   const [awaitingGuardianName, setAwaitingGuardianName] = useState<string | null>(null);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -50,125 +49,79 @@ export default function MyPlanPage() {
     };
   }, []);
 
-  function startPolling() {
+  function startPolling(userId: string) {
     if (pollingRef.current) return;
     pollingRef.current = setInterval(async () => {
-      const result = await fetchState();
-      if (result?.loadedState) {
+      const supabase = createClient();
+      const loadedState = await loadPlanState(supabase, userId);
+      if (loadedState) {
         if (pollingRef.current) clearInterval(pollingRef.current);
         pollingRef.current = null;
-        setState(result.loadedState);
+        setState(loadedState);
         setAwaitingGuardian(false);
       }
     }, GUARDIAN_POLL_INTERVAL_MS);
   }
 
-  async function fetchState() {
-    const supabase = createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      router.replace("/login?next=/plan");
-      return null;
-    }
-    const loadedState = await loadPlanState(supabase, user.id);
-    return { supabase, user, loadedState };
-  }
-
-  async function generateFromSavedIntake() {
-    const intake = loadIntake();
-    if (!intake) {
-      router.replace("/intake");
-      return;
-    }
-
-    setGenerating(true);
-    setGenerateError(null);
-
-    for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt++) {
-      try {
-        const res = await fetch("/api/generate-plan", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(intake),
-        });
-
-        if (res.status === 202) {
-          const body = await res.json().catch(() => ({}));
-          if (body.status === "pending_guardian_consent") {
-            clearAll();
-            setGenerating(false);
-            setAwaitingGuardianName(intake.guardianName ?? null);
-            setAwaitingGuardian(true);
-            setLoaded(true);
-            startPolling();
-            return;
-          }
-        }
-
-        if (res.ok) {
-          clearAll();
-          const result = await fetchState();
-          if (result?.loadedState) {
-            setState(result.loadedState);
-            setGenerating(false);
-            setLoaded(true);
-            return;
-          }
-        } else if (res.status !== 403) {
-          const body = await res.json().catch(() => ({}));
-          throw new Error(body.error ?? "Couldn't generate your plan.");
-        }
-        // 403 right after checkout usually just means the Stripe webhook
-        // hasn't updated subscription status yet — worth a few retries.
-      } catch (err) {
-        setGenerateError(err instanceof Error ? err.message : "Something went wrong");
-        setGenerating(false);
-        setLoaded(true);
-        return;
-      }
-
-      const delay = RETRY_DELAYS_MS[attempt];
-      if (delay) await new Promise((resolve) => setTimeout(resolve, delay));
-    }
-
-    setGenerateError("Still finishing your subscription setup. Try again in a moment.");
-    setGenerating(false);
-    setLoaded(true);
-  }
-
   useEffect(() => {
     (async () => {
-      const result = await fetchState();
-      if (!result) return;
-      if (result.loadedState) {
-        setState(result.loadedState);
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
+        router.replace("/login?next=/plan");
+        return;
+      }
+
+      const loadedState = await loadPlanState(supabase, user.id);
+      if (loadedState) {
+        setState(loadedState);
         setLoaded(true);
         return;
       }
 
-      // Before falling back to a staged-intake retry, check whether a guardian
-      // consent request is already pending for this user (e.g. they closed the
-      // tab and came back — there's nothing in localStorage to fall back to,
-      // but the request is already sitting server-side).
-      const { data: guardianRow } = await result.supabase
+      // No plan yet — confirm subscription status before deciding where to send
+      // them (a few retries absorb the short webhook lag right after checkout).
+      let subscription = await getActiveSubscription(supabase, user.id);
+      for (let attempt = 0; !subscription && attempt < RETRY_DELAYS_MS.length; attempt++) {
+        await new Promise((resolve) => setTimeout(resolve, RETRY_DELAYS_MS[attempt]));
+        subscription = await getActiveSubscription(supabase, user.id);
+      }
+
+      if (!subscription) {
+        router.replace("/#pricing");
+        return;
+      }
+
+      // Base tier never gets an AI-generated plan — the manual workout builder
+      // is its only real destination. Sending it through the AI path here would
+      // just 403 forever, which used to show a permanent "still finishing setup"
+      // error for a case that was never actually transient.
+      if (subscription.tier === "base") {
+        router.replace("/build");
+        return;
+      }
+
+      // Pro/Premium with no plan yet — check for a pending guardian-consent
+      // request (a minor's intake was already submitted) before sending them to
+      // /intake to start one.
+      const { data: guardianRow } = await supabase
         .from("guardian_verifications")
         .select("status, guardian_name")
-        .eq("user_id", result.user.id)
+        .eq("user_id", user.id)
         .maybeSingle();
       if (guardianRow?.status === "pending") {
         setAwaitingGuardianName(guardianRow.guardian_name);
         setAwaitingGuardian(true);
         setLoaded(true);
-        startPolling();
+        startPolling(user.id);
         return;
       }
 
-      await generateFromSavedIntake();
+      router.replace("/intake");
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [router]);
 
   async function handleToggleDrill(day: number, drillId: string) {
     if (!state) return;
@@ -203,28 +156,8 @@ export default function MyPlanPage() {
     });
   }
 
-  if (generating) {
-    return <PlanGeneratingScreen />;
-  }
-
   if (awaitingGuardian) {
     return <WaitingForGuardianScreen guardianName={awaitingGuardianName} />;
-  }
-
-  if (generateError) {
-    return (
-      <div className="max-w-2xl px-6 py-12">
-        <p className="text-sm text-red-400 mb-4" role="alert">
-          {generateError}
-        </p>
-        <div className="flex gap-3">
-          <Button onClick={generateFromSavedIntake}>Try again</Button>
-          <Button variant="outlineDark" onClick={() => window.location.assign("/#pricing")}>
-            View plans
-          </Button>
-        </div>
-      </div>
-    );
   }
 
   if (!loaded || !state) {
@@ -314,7 +247,7 @@ export default function MyPlanPage() {
                 </h3>
                 <span className="text-xs text-zinc-400">~{session.target_duration_minutes} min</span>
               </div>
-              <p className="text-sm text-zinc-400 mb-5">{session.explanation}</p>
+              {session.explanation && <p className="text-sm text-zinc-400 mb-5">{session.explanation}</p>}
               <div className="flex flex-col gap-2.5 mb-5">
                 {drills.map(({ entry, drill }) => (
                   <DrillChecklistItem

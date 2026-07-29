@@ -107,6 +107,7 @@ export async function generatePlan(intake: IntakeData, aiProvider: AIProvider = 
       drills: sessionDrills.map((d) => ({ drillId: d.id, reps_duration: d.reps_duration })),
       target_duration_minutes: assembled.totalMinutes,
       explanation,
+      source: "ai",
     });
   }
 

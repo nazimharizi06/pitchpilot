@@ -21,7 +21,7 @@ export function CTASection() {
           <p className="text-emerald-100 mb-8 max-w-md mx-auto relative">
             7 days free. A few minutes of intake. A full week of personalized training on the other side.
           </p>
-          <Link href="/intake" className="relative inline-block">
+          <Link href="/#pricing" className="relative inline-block">
             <Button variant="inverse" className="text-base px-6 py-3">
               Start your free trial
             </Button>

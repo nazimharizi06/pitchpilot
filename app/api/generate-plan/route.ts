@@ -67,10 +67,11 @@ export async function POST(request: Request) {
       guardian_name: guardianName!,
       guardian_email: guardianEmail!,
       intake: result.data,
+      purpose: "plan",
       status: "pending",
       confirmed_at: null,
     });
-    await sendGuardianConsentEmail({ guardianEmail: guardianEmail!, guardianName: guardianName!, token });
+    await sendGuardianConsentEmail({ guardianEmail: guardianEmail!, guardianName: guardianName!, token, purpose: "plan" });
     return NextResponse.json({ status: "pending_guardian_consent" }, { status: 202 });
   }
 

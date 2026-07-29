@@ -51,7 +51,7 @@ export function Hero({ previewSession, weekThemes }: { previewSession: PlanSessi
             </li>
           </ul>
           <div className="flex flex-col sm:flex-row gap-3">
-            <Link href="/intake" onClick={() => track("start_trial_click", { location: "hero" })}>
+            <Link href="/#pricing" onClick={() => track("start_trial_click", { location: "hero" })}>
               <Button className="w-full sm:w-auto text-base px-6 py-3 gap-2">
                 Start your free 7-day trial
                 <ArrowRight className="h-4 w-4" />
