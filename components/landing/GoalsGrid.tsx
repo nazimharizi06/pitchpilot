@@ -3,7 +3,7 @@ import type { SkillCategory } from "@/lib/types";
 import { SKILL_ICONS as ICONS, SKILL_BLURBS as BLURBS, SKILL_GRADIENTS as GRADIENTS, SKILL_ICON_COLORS as ICON_COLORS } from "@/lib/skillMeta";
 
 const FEATURED: SkillCategory[] = ["ball_control", "dribbling", "passing", "shooting"];
-const COMPACT: SkillCategory[] = ["speed_agility", "endurance", "weak_foot"];
+const COMPACT: SkillCategory[] = ["speed_agility", "endurance", "weak_foot", "strength", "defending", "goalkeeping"];
 
 export function GoalsGrid() {
   return (

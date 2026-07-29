@@ -1,4 +1,4 @@
-import { Target, Shuffle, Send, Crosshair, Wind, HeartPulse, Repeat2 } from "lucide-react";
+import { Target, Shuffle, Send, Crosshair, Wind, HeartPulse, Repeat2, Dumbbell, Shield, Hand } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { SkillCategory } from "@/lib/types";
 
@@ -10,6 +10,9 @@ export const SKILL_ICONS: Record<SkillCategory, LucideIcon> = {
   speed_agility: Wind,
   endurance: HeartPulse,
   weak_foot: Repeat2,
+  strength: Dumbbell,
+  defending: Shield,
+  goalkeeping: Hand,
 };
 
 export const SKILL_BLURBS: Record<SkillCategory, string> = {
@@ -20,6 +23,9 @@ export const SKILL_BLURBS: Record<SkillCategory, string> = {
   speed_agility: "Change of direction and top-end speed.",
   endurance: "The engine to compete for 90 minutes.",
   weak_foot: "Confidence on both feet, not just one.",
+  strength: "Bodyweight power and injury-risk reduction.",
+  defending: "Jockeying, closing down, and winning the ball back.",
+  goalkeeping: "Handling, footwork, and shot-stopping.",
 };
 
 // Each category gets its own gradient wash so grids read as tiered/varied
@@ -32,6 +38,9 @@ export const SKILL_GRADIENTS: Record<SkillCategory, string> = {
   speed_agility: "from-violet-500/25 via-violet-500/0 to-transparent",
   endurance: "from-cyan-500/25 via-cyan-500/0 to-transparent",
   weak_foot: "from-lime-500/25 via-lime-500/0 to-transparent",
+  strength: "from-orange-500/25 via-orange-500/0 to-transparent",
+  defending: "from-blue-500/25 via-blue-500/0 to-transparent",
+  goalkeeping: "from-fuchsia-500/25 via-fuchsia-500/0 to-transparent",
 };
 
 export const SKILL_ICON_COLORS: Record<SkillCategory, string> = {
@@ -42,4 +51,7 @@ export const SKILL_ICON_COLORS: Record<SkillCategory, string> = {
   speed_agility: "text-violet-400",
   endurance: "text-cyan-400",
   weak_foot: "text-lime-400",
+  strength: "text-orange-400",
+  defending: "text-blue-400",
+  goalkeeping: "text-fuchsia-400",
 };

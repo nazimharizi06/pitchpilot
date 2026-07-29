@@ -46,6 +46,19 @@ export async function generatePlan(intake: IntakeData, aiProvider: AIProvider = 
   const { goals, self_ratings, days_per_week, space_available, equipment_available } = goalsAndAssessment;
 
   const weighted = await aiProvider.weightGoals(goals, self_ratings);
+
+  // Goalkeepers get goalkeeping training prioritized — boosted to the max weight
+  // regardless of self-rating, so it isn't crowded out by other selected goals.
+  // Only takes effect if they actually selected "goalkeeping" as a goal; a
+  // goalkeeper who didn't gets no special treatment, and goalkeeping drills are
+  // otherwise never selected for a plan that didn't ask for them (see
+  // candidatesForGoal below), which is what keeps them out of outfield plans.
+  if (profile.position === "goalkeeper") {
+    const gkEntry = weighted.find((w) => w.goal === "goalkeeping");
+    if (gkEntry) gkEntry.weight = 3;
+    weighted.sort((a, b) => b.weight - a.weight);
+  }
+
   const rotation = buildWeightedRotation(weighted);
   // Goal fill priority for topping up a session once the day's theme runs
   // out of matching drills — weightGoals' own ordering (weaker goals first).

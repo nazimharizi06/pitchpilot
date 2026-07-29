@@ -9,7 +9,10 @@ export type SkillCategory =
   | "shooting"
   | "speed_agility"
   | "endurance"
-  | "weak_foot";
+  | "weak_foot"
+  | "strength"
+  | "defending"
+  | "goalkeeping";
 
 export const SKILL_CATEGORIES: SkillCategory[] = [
   "ball_control",
@@ -19,6 +22,9 @@ export const SKILL_CATEGORIES: SkillCategory[] = [
   "speed_agility",
   "endurance",
   "weak_foot",
+  "strength",
+  "defending",
+  "goalkeeping",
 ];
 
 export const SKILL_CATEGORY_LABELS: Record<SkillCategory, string> = {
@@ -29,6 +35,9 @@ export const SKILL_CATEGORY_LABELS: Record<SkillCategory, string> = {
   speed_agility: "Speed / Agility",
   endurance: "Endurance",
   weak_foot: "Weak Foot",
+  strength: "Strength",
+  defending: "Defending",
+  goalkeeping: "Goalkeeping",
 };
 
 export type Level = "beginner" | "intermediate" | "advanced";
@@ -49,12 +58,25 @@ export interface Drill {
   level: Level;
   weak_foot_variant: string | null;
   equipment: Equipment[];
+  // Minimum space this drill needs — the ranking in lib/engine/filter.ts means any
+  // larger space also qualifies, so this is really "smallest sufficient space,"
+  // not an exhaustive list.
   space: Space;
+  // True only for drills that specifically need natural grass (e.g. diving), not just
+  // "enough room" — the space rank alone can't express "yard/full_field but not
+  // driveway" since driveway outranks yard despite being a harder surface. See
+  // drillSpaceSatisfies in lib/engine/filter.ts.
+  grass_only?: boolean;
   instructions: string;
   progressions: string[];
   reps_duration: string;
   estimated_minutes: number;
   video_url: string | null;
+  // Informational only — which positions this drill is especially relevant for.
+  // Not used to hide/exclude drills from other positions (any player can still pick
+  // any category as a goal); see generatePlan.ts for the one place position
+  // actually affects selection (boosting Goalkeeping weight for keepers).
+  positions?: Position[];
 }
 
 export type AccountType = "parent" | "player";
@@ -62,6 +84,38 @@ export type AccountType = "parent" | "player";
 export type DominantFoot = "left" | "right" | "both";
 
 export type Gender = "male" | "female" | "other" | "prefer_not_to_say";
+
+export type Position =
+  | "goalkeeper"
+  | "center_back"
+  | "full_back"
+  | "defensive_midfielder"
+  | "central_midfielder"
+  | "attacking_midfielder"
+  | "winger"
+  | "forward";
+
+export const POSITIONS: Position[] = [
+  "goalkeeper",
+  "center_back",
+  "full_back",
+  "defensive_midfielder",
+  "central_midfielder",
+  "attacking_midfielder",
+  "winger",
+  "forward",
+];
+
+export const POSITION_LABELS: Record<Position, string> = {
+  goalkeeper: "Goalkeeper",
+  center_back: "Center Back",
+  full_back: "Full Back / Wing Back",
+  defensive_midfielder: "Defensive Midfielder",
+  central_midfielder: "Central Midfielder",
+  attacking_midfielder: "Attacking Midfielder",
+  winger: "Winger",
+  forward: "Forward / Striker",
+};
 
 export interface UserProfile {
   id: string;
@@ -71,7 +125,7 @@ export interface UserProfile {
   weight_lb: number;
   gender: Gender;
   dominant_foot: DominantFoot;
-  position: string | null;
+  position: Position | null;
   playing_level: Level;
   injury_notes: string | null;
 }

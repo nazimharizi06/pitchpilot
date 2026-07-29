@@ -1,3 +1,4 @@
+import { POSITION_LABELS } from "@/lib/types";
 import type { Drill } from "@/lib/types";
 
 const SESSION_TYPE_LABEL: Record<Drill["session_type"], string> = {
@@ -18,7 +19,7 @@ export function DrillCard({ drill, repsDuration }: { drill: Drill; repsDuration:
         </div>
         <span className="text-xs text-zinc-500 whitespace-nowrap">{repsDuration}</span>
       </div>
-      <p className="mt-2 text-sm text-zinc-400">{drill.instructions}</p>
+      <p className="mt-2 text-sm text-zinc-400 break-words">{drill.instructions}</p>
       {drill.progressions.length > 0 && (
         <p className="mt-2 text-xs text-zinc-500">
           <span className="font-medium text-zinc-400">Level up: </span>
@@ -29,6 +30,12 @@ export function DrillCard({ drill, repsDuration }: { drill: Drill; repsDuration:
         <p className="mt-2 text-xs text-zinc-500">
           <span className="font-medium text-zinc-400">Weak-foot variant: </span>
           {drill.weak_foot_variant}
+        </p>
+      )}
+      {drill.positions && drill.positions.length > 0 && (
+        <p className="mt-2 text-xs text-zinc-500">
+          <span className="font-medium text-zinc-400">Recommended for: </span>
+          {drill.positions.map((p) => POSITION_LABELS[p]).join(", ")}
         </p>
       )}
     </div>

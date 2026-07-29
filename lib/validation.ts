@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { POSITIONS } from "@/lib/types";
 
 export const profileSchema = z.object({
   account_type: z.enum(["parent", "player"]),
@@ -7,14 +8,27 @@ export const profileSchema = z.object({
   weight_lb: z.coerce.number().positive("Enter a valid weight"),
   gender: z.enum(["male", "female", "other", "prefer_not_to_say"]),
   dominant_foot: z.enum(["left", "right", "both"]),
-  position: z.string().trim().min(1).nullable(),
+  position: z.enum(POSITIONS).nullable(),
   playing_level: z.enum(["beginner", "intermediate", "advanced"]),
   injury_notes: z.string().trim().max(1000).nullable(),
 });
 
 const goalsFields = {
   goals: z
-    .array(z.enum(["ball_control", "dribbling", "passing", "shooting", "speed_agility", "endurance", "weak_foot"]))
+    .array(
+      z.enum([
+        "ball_control",
+        "dribbling",
+        "passing",
+        "shooting",
+        "speed_agility",
+        "endurance",
+        "weak_foot",
+        "strength",
+        "defending",
+        "goalkeeping",
+      ])
+    )
     .min(1, "Pick at least one goal"),
   self_ratings: z.record(z.string(), z.enum(["beginner", "intermediate", "advanced"])),
 };

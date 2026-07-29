@@ -1,6 +1,7 @@
 "use client";
 
 import { User } from "lucide-react";
+import { POSITIONS, POSITION_LABELS } from "@/lib/types";
 import type { UserProfile } from "@/lib/types";
 import { Field, darkInputClass } from "@/components/ui/Field";
 
@@ -121,13 +122,18 @@ export function ProfileStep({
       </Field>
 
       <Field dark label="Position (optional)">
-        <input
-          type="text"
+        <select
           className={darkInputClass}
-          placeholder="e.g. Center Back"
           value={value.position ?? ""}
-          onChange={(e) => set("position", e.target.value || null)}
-        />
+          onChange={(e) => set("position", (e.target.value || null) as ProfileForm["position"])}
+        >
+          <option value="">Prefer not to say</option>
+          {POSITIONS.map((position) => (
+            <option key={position} value={position}>
+              {POSITION_LABELS[position]}
+            </option>
+          ))}
+        </select>
       </Field>
 
       <Field dark label="Current playing level">
