@@ -7,10 +7,15 @@ import { Check } from "lucide-react";
 const ROWS: { feature: string; base: ReactNode; pro: ReactNode; premium: ReactNode }[] = [
   { feature: "Full drill library, filterable by skill/level/equipment/space", base: true, pro: true, premium: true },
   { feature: "Favorite drills", base: true, pro: true, premium: true },
-  { feature: "AI-generated personalized weekly plan", base: false, pro: true, premium: true },
+  { feature: "AI-generated 3-week training program", base: false, pro: true, premium: true },
   { feature: "Session-by-session AI explanations", base: false, pro: true, premium: true },
   { feature: "Progress tracking (streaks, completion, stats)", base: false, pro: true, premium: true },
-  { feature: "Retake intake to refresh your plan", base: "—", pro: "Every 7 days", premium: "Anytime" },
+  {
+    feature: "Retake intake to refresh your plan",
+    base: "—",
+    pro: "After finishing your 3 weeks",
+    premium: "Anytime",
+  },
   { feature: "Priority support", base: false, pro: false, premium: true },
 ];
 

@@ -7,7 +7,10 @@ import type { Drill, PlanDrillEntry, PlanSession } from "@/lib/types";
 
 const SESSION_TYPE_LABEL = { warm_up: "Warm-up", main: "Main set", cool_down: "Cool-down" } as const;
 
-export function SamplePlanSection({ sessions }: { sessions: PlanSession[] }) {
+export function SamplePlanSection({ sessions: allSessions }: { sessions: PlanSession[] }) {
+  // The real demo plan now spans 3 weeks (see lib/engine/generatePlan.ts) — the public
+  // preview only needs to show one sample week, not all 21 days.
+  const sessions = allSessions.filter((s) => s.week === 1);
   const featured = sessions[0];
   if (!featured) return null;
 

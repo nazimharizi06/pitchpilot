@@ -103,6 +103,10 @@ export interface PlanDrillEntry {
 
 export interface PlanSession {
   day: number;
+  // Groups sessions for display (Week 1/2/3...). AI plans span 3 weeks per intake
+  // (lib/engine/generatePlan.ts); custom/builder sessions use a plain 7-day grouping
+  // (Math.ceil(day / 7)) since Base has no days_per_week pacing concept.
+  week: number;
   theme: string;
   drills: PlanDrillEntry[];
   target_duration_minutes: number;

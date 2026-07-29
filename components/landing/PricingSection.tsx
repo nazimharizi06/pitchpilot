@@ -37,9 +37,9 @@ const TIERS: {
     popular: true,
     features: [
       "Everything in Base",
-      "AI-generated weekly training plans",
+      "AI-generated 3-week training program",
       "Richer AI explanations for every session",
-      "Retake your intake to refresh your plan (every 7 days)",
+      "Retake your intake once you finish your 3 weeks",
     ],
   },
   {
@@ -51,7 +51,7 @@ const TIERS: {
     popular: false,
     features: [
       "Everything in Pro",
-      "Unlimited plan regeneration",
+      "Retake intake anytime, even mid-program",
       "Priority support",
       "Drill demonstration videos (coming soon)",
     ],

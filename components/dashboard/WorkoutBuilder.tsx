@@ -167,6 +167,9 @@ export function WorkoutBuilder() {
 
     const session: PlanSession = {
       day: selectedDay,
+      // Plain 7-day grouping (not days_per_week-aware like AI plans) — Base has no
+      // pacing concept, this is just for display grouping alongside AI weeks.
+      week: Math.ceil(selectedDay / 7),
       theme: sessionName.trim() || `Day ${selectedDay} — Custom Session`,
       drills: drillEntries,
       target_duration_minutes: totalMinutes,

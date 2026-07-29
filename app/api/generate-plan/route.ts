@@ -7,8 +7,6 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getActiveSubscription, meetsTier } from "@/lib/subscriptions";
 
-const REGENERATION_COOLDOWN_MS = 7 * 24 * 60 * 60 * 1000;
-
 export async function POST(request: Request) {
   const supabase = await createClient();
   const {
@@ -24,17 +22,23 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Upgrade to Pro or Premium to generate a training plan." }, { status: 403 });
   }
 
-  // Pro can refresh their plan once every 7 days; Premium can refresh anytime.
-  // Only applies to regenerating an existing plan — a first-time request never
-  // has a `plans` row yet, so it's never blocked.
+  // Pro can only start a new 3-week program once their current one is fully
+  // completed; Premium can regenerate anytime, even mid-program. Only applies to
+  // regenerating an existing plan — a first-time request never has a `plans` row
+  // yet, so it's never blocked.
   if (subscription!.tier === "pro") {
-    const { data: existingPlan } = await supabase.from("plans").select("created_at").eq("user_id", user.id).maybeSingle();
+    const { data: existingPlan } = await supabase.from("plans").select("user_id").eq("user_id", user.id).maybeSingle();
     if (existingPlan) {
-      const nextAvailable = new Date(new Date(existingPlan.created_at).getTime() + REGENERATION_COOLDOWN_MS);
-      if (nextAvailable.getTime() > Date.now()) {
+      const { data: progressRows } = await supabase
+        .from("session_progress")
+        .select("completed_at")
+        .eq("user_id", user.id);
+      const stillInProgress = (progressRows ?? []).some((row) => !row.completed_at);
+      if (stillInProgress) {
         return NextResponse.json(
           {
-            error: `Pro plans can be refreshed once every 7 days. Yours reopens on ${nextAvailable.toLocaleDateString()}. Upgrade to Premium for unlimited regeneration.`,
+            error:
+              "Complete your current 3-week program before starting a new one. Upgrade to Premium to change plans anytime.",
           },
           { status: 429 }
         );

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { track } from "@vercel/analytics";
 import { CalendarDays, Flame, Target, Clock, ListChecks } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -141,18 +142,21 @@ export default function MyPlanPage() {
 
   async function handleCompleteSession(day: number) {
     if (!state) return;
+    const session = state.plan.sessions.find((s) => s.day === day);
+    if (!session) return;
     const isFirstEver = state.progress.every((p) => !p.completed_at);
     const supabase = createClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) return;
-    await markSessionComplete(supabase, user.id, day);
+    const allDrillIds = session.drills.map((d) => d.drillId);
+    await markSessionComplete(supabase, user.id, day, allDrillIds);
     if (isFirstEver) track("first_session_completed", {});
     const nowIso = new Date().toISOString();
     setState({
       ...state,
-      progress: state.progress.map((p) => (p.day === day ? { ...p, completed_at: nowIso } : p)),
+      progress: state.progress.map((p) => (p.day === day ? { ...p, completed_at: nowIso, completed_drill_ids: allDrillIds } : p)),
     });
   }
 
@@ -169,6 +173,14 @@ export default function MyPlanPage() {
   const activeDay = plan.sessions.find((s) => !progress.find((p) => p.day === s.day)?.completed_at);
   const unlockedCount = 1 + progress.filter((p) => p.completed_at).length;
 
+  const sessionsByWeek = new Map<number, typeof plan.sessions>();
+  for (const session of plan.sessions) {
+    const list = sessionsByWeek.get(session.week) ?? [];
+    list.push(session);
+    sessionsByWeek.set(session.week, list);
+  }
+  const weeks = Array.from(sessionsByWeek.keys()).sort((a, b) => a - b);
+
   return (
     <div className="px-6 py-10 max-w-6xl mx-auto">
       <div className="relative overflow-hidden rounded-3xl border border-zinc-800 bg-gradient-to-br from-zinc-900 to-zinc-950 p-8 mb-8">
@@ -179,7 +191,7 @@ export default function MyPlanPage() {
           Personalized sessions designed to match your level, goals, and equipment.
         </p>
         <div className="relative flex items-center justify-between text-xs text-zinc-400 mb-2">
-          <span className="font-semibold text-emerald-400">WEEK PROGRESS</span>
+          <span className="font-semibold text-emerald-400">PROGRAM PROGRESS</span>
           <span>
             {stats.sessionsCompleted} of {plan.sessions.length} sessions completed
           </span>
@@ -194,83 +206,105 @@ export default function MyPlanPage() {
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
         <StatCard icon={Flame} value={stats.streak} label="Day streak" iconClassName="bg-orange-950/60 text-orange-400" />
-        <StatCard icon={CalendarDays} value={stats.sessionsCompleted} label="Sessions this week" />
+        <StatCard icon={CalendarDays} value={stats.sessionsCompleted} label="Sessions completed" />
         <StatCard icon={Target} value={`${stats.completionPct}%`} label="Plan completion" />
         <StatCard icon={Clock} value={stats.totalMinutes} label="Total minutes" iconClassName="bg-sky-950/60 text-sky-400" />
         <StatCard icon={ListChecks} value={stats.drillsCompleted} label="Drills completed" />
       </div>
 
-      <h2 className="text-lg font-semibold text-white mb-4">Your training plan</h2>
-      <div className="flex flex-col gap-3">
-        {plan.sessions.map((session) => {
-          const unlocked = isDayUnlocked(session.day, progress);
-          const dayProgress = progress.find((p) => p.day === session.day);
-          const isActive = activeDay?.day === session.day;
+      {weeks.map((week) => (
+        <div key={week} className="mb-8">
+          <h2 className="text-lg font-semibold text-white mb-4">Week {week}</h2>
+          <div className="flex flex-col gap-3">
+            {sessionsByWeek.get(week)!.map((session) => {
+              const unlocked = isDayUnlocked(session.day, progress);
+              const dayProgress = progress.find((p) => p.day === session.day);
+              const isActive = activeDay?.day === session.day;
 
-          if (!unlocked) {
-            return (
-              <div
-                key={session.day}
-                className="flex items-center justify-between rounded-2xl border border-zinc-800 bg-zinc-900/20 px-5 py-4 opacity-60"
-              >
-                <span className="text-sm font-medium text-zinc-400">
-                  Day {session.day} — {session.theme}
-                </span>
-                <span className="text-xs text-zinc-500">~{session.target_duration_minutes} min · Locked</span>
-              </div>
-            );
-          }
+              if (!unlocked) {
+                return (
+                  <div
+                    key={session.day}
+                    className="flex items-center justify-between rounded-2xl border border-zinc-800 bg-zinc-900/20 px-5 py-4 opacity-60"
+                  >
+                    <span className="text-sm font-medium text-zinc-400">
+                      Day {session.day} — {session.theme}
+                    </span>
+                    <span className="text-xs text-zinc-500">~{session.target_duration_minutes} min · Locked</span>
+                  </div>
+                );
+              }
 
-          if (!isActive) {
-            return (
-              <div
-                key={session.day}
-                className="flex items-center justify-between rounded-2xl border border-emerald-900/60 bg-emerald-950/10 px-5 py-4"
-              >
-                <span className="text-sm font-medium text-white">
-                  Day {session.day} — {session.theme}
-                </span>
-                <span className="text-xs text-emerald-400">Completed</span>
-              </div>
-            );
-          }
+              if (!isActive) {
+                return (
+                  <div
+                    key={session.day}
+                    className="flex items-center justify-between rounded-2xl border border-emerald-900/60 bg-emerald-950/10 px-5 py-4"
+                  >
+                    <span className="text-sm font-medium text-white">
+                      Day {session.day} — {session.theme}
+                    </span>
+                    <span className="text-xs text-emerald-400">Completed</span>
+                  </div>
+                );
+              }
 
-          const drills = session.drills
-            .map((entry) => ({ entry, drill: drillsById[entry.drillId] }))
-            .filter((d): d is { entry: PlanDrillEntry; drill: Drill } => Boolean(d.drill));
+              const drills = session.drills
+                .map((entry) => ({ entry, drill: drillsById[entry.drillId] }))
+                .filter((d): d is { entry: PlanDrillEntry; drill: Drill } => Boolean(d.drill));
 
-          return (
-            <div key={session.day} className="rounded-2xl border border-emerald-800 bg-zinc-900/40 p-6">
-              <div className="flex items-baseline justify-between gap-3 mb-1">
-                <h3 className="text-lg font-semibold text-white">
-                  Day {session.day} — {session.theme}
-                </h3>
-                <span className="text-xs text-zinc-400">~{session.target_duration_minutes} min</span>
-              </div>
-              {session.explanation && <p className="text-sm text-zinc-400 mb-5">{session.explanation}</p>}
-              <div className="flex flex-col gap-2.5 mb-5">
-                {drills.map(({ entry, drill }) => (
-                  <DrillChecklistItem
-                    key={entry.drillId}
-                    drill={drill}
-                    repsDuration={entry.reps_duration}
-                    completed={dayProgress?.completed_drill_ids.includes(entry.drillId) ?? false}
-                    onToggle={() => handleToggleDrill(session.day, entry.drillId)}
-                  />
-                ))}
-              </div>
-              <Button onClick={() => handleCompleteSession(session.day)}>
-                {session.day === plan.sessions.length ? "Mark complete" : "Mark complete & unlock next"}
-              </Button>
-            </div>
-          );
-        })}
-      </div>
+              return (
+                <div key={session.day} className="rounded-2xl border border-emerald-800 bg-zinc-900/40 p-6">
+                  <div className="flex items-baseline justify-between gap-3 mb-1">
+                    <h3 className="text-lg font-semibold text-white">
+                      Day {session.day} — {session.theme}
+                    </h3>
+                    <span className="text-xs text-zinc-400">~{session.target_duration_minutes} min</span>
+                  </div>
+                  {session.explanation && <p className="text-sm text-zinc-400 mb-5">{session.explanation}</p>}
+                  <div className="flex flex-col gap-2.5 mb-5">
+                    {drills.map(({ entry, drill }) => (
+                      <DrillChecklistItem
+                        key={entry.drillId}
+                        drill={drill}
+                        repsDuration={entry.reps_duration}
+                        completed={dayProgress?.completed_drill_ids.includes(entry.drillId) ?? false}
+                        onToggle={() => handleToggleDrill(session.day, entry.drillId)}
+                      />
+                    ))}
+                  </div>
+                  <Button onClick={() => handleCompleteSession(session.day)}>
+                    {session.day === plan.sessions.length ? "Mark complete" : "Mark complete & unlock next"}
+                  </Button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ))}
 
       {!activeDay && (
-        <p className="mt-6 text-sm text-center text-zinc-400">
-          That&apos;s the full week! Come back after training to re-check your goals for next week.
-        </p>
+        <div className="rounded-2xl border border-emerald-800 bg-emerald-950/10 p-6 text-center">
+          {plan.sessions.some((s) => s.source === "ai") ? (
+            <>
+              <p className="text-white font-medium mb-1">You&apos;ve completed your 3-week program 🎉</p>
+              <p className="text-sm text-zinc-400 mb-4">
+                Retake your intake to realign your goals and build your next 3 weeks.
+              </p>
+              <Link href="/intake">
+                <Button>Retake your intake</Button>
+              </Link>
+            </>
+          ) : (
+            <>
+              <p className="text-white font-medium mb-1">All caught up!</p>
+              <p className="text-sm text-zinc-400 mb-4">Head to Build a Workout to add more sessions.</p>
+              <Link href="/build">
+                <Button>Build a workout</Button>
+              </Link>
+            </>
+          )}
+        </div>
       )}
     </div>
   );

@@ -130,9 +130,12 @@ describe("generatePlan (integration, real drill library)", () => {
     };
   }
 
-  it("generates one session per requested day, each within the time budget", async () => {
+  it("generates 3 weeks of sessions (days_per_week per week), each within the time budget", async () => {
     const plan = await generatePlan(buildIntake());
-    expect(plan.sessions).toHaveLength(2);
+    expect(plan.sessions).toHaveLength(6); // days_per_week (2) * 3 weeks
+    expect(plan.sessions.filter((s) => s.week === 1)).toHaveLength(2);
+    expect(plan.sessions.filter((s) => s.week === 2)).toHaveLength(2);
+    expect(plan.sessions.filter((s) => s.week === 3)).toHaveLength(2);
     for (const session of plan.sessions) {
       expect(session.target_duration_minutes).toBeGreaterThan(0);
       expect(session.target_duration_minutes).toBeLessThanOrEqual(60);

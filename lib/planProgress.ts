@@ -92,10 +92,18 @@ export async function toggleDrillComplete(
   return next;
 }
 
-export async function markSessionComplete(supabase: SupabaseClient, userId: string, day: number): Promise<void> {
+// Marking a session complete also marks every drill in it complete — otherwise a user who
+// clicks "Mark complete" without individually checking each drill first ends up with a
+// "completed" session that still counts 0 drills done in computeStats.
+export async function markSessionComplete(
+  supabase: SupabaseClient,
+  userId: string,
+  day: number,
+  allDrillIds: string[]
+): Promise<void> {
   await supabase
     .from("session_progress")
-    .update({ completed_at: new Date().toISOString() })
+    .update({ completed_at: new Date().toISOString(), completed_drill_ids: allDrillIds })
     .eq("user_id", userId)
     .eq("day", day);
 }

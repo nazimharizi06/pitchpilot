@@ -57,7 +57,12 @@ export async function generatePlan(intake: IntakeData, aiProvider: AIProvider = 
   const usedCounts = new Map<string, number>();
   const sessions: PlanSession[] = [];
 
-  for (let day = 0; day < days_per_week; day++) {
+  // 3 weeks of sessions per intake, so a subscriber only needs to retake intake
+  // once they've actually finished a full program — see app/api/generate-plan/route.ts
+  // for the Pro-tier completion gate this enables.
+  const totalDays = days_per_week * 3;
+
+  for (let day = 0; day < totalDays; day++) {
     const theme = rotation[day % rotation.length];
     const themeLevel = self_ratings[theme] ?? profile.playing_level;
 
@@ -103,6 +108,7 @@ export async function generatePlan(intake: IntakeData, aiProvider: AIProvider = 
 
     sessions.push({
       day: day + 1,
+      week: Math.floor(day / days_per_week) + 1,
       theme: SKILL_CATEGORY_LABELS[theme],
       drills: sessionDrills.map((d) => ({ drillId: d.id, reps_duration: d.reps_duration })),
       target_duration_minutes: assembled.totalMinutes,

@@ -31,61 +31,74 @@ export default async function SessionsPage() {
 
   const { plan, progress } = state;
 
+  const sessionsByWeek = new Map<number, typeof plan.sessions>();
+  for (const session of plan.sessions) {
+    const list = sessionsByWeek.get(session.week) ?? [];
+    list.push(session);
+    sessionsByWeek.set(session.week, list);
+  }
+  const weeks = Array.from(sessionsByWeek.keys()).sort((a, b) => a - b);
+
   return (
     <div className="px-6 py-10 max-w-4xl mx-auto">
       <h1 className="text-2xl font-semibold text-white mb-1">Sessions</h1>
       <p className="text-sm text-zinc-400 mb-8">Every session in your current plan, day by day.</p>
 
-      <div className="flex flex-col gap-6">
-        {plan.sessions.map((session) => {
-          const unlocked = isDayUnlocked(session.day, progress);
-          const dayProgress = progress.find((p) => p.day === session.day);
-          const completed = Boolean(dayProgress?.completed_at);
+      {weeks.map((week) => (
+        <div key={week} className="mb-8">
+          <h2 className="text-lg font-semibold text-white mb-4">Week {week}</h2>
+          <div className="flex flex-col gap-6">
+            {sessionsByWeek.get(week)!.map((session) => {
+              const unlocked = isDayUnlocked(session.day, progress);
+              const dayProgress = progress.find((p) => p.day === session.day);
+              const completed = Boolean(dayProgress?.completed_at);
 
-          if (!unlocked) {
-            return (
-              <div
-                key={session.day}
-                className="flex items-center justify-between rounded-2xl border border-zinc-800 bg-zinc-900/20 px-5 py-4 opacity-60"
-              >
-                <span className="text-sm font-medium text-zinc-400">
-                  Day {session.day} — {session.theme}
-                </span>
-                <span className="text-xs text-zinc-500">~{session.target_duration_minutes} min · Locked</span>
-              </div>
-            );
-          }
+              if (!unlocked) {
+                return (
+                  <div
+                    key={session.day}
+                    className="flex items-center justify-between rounded-2xl border border-zinc-800 bg-zinc-900/20 px-5 py-4 opacity-60"
+                  >
+                    <span className="text-sm font-medium text-zinc-400">
+                      Day {session.day} — {session.theme}
+                    </span>
+                    <span className="text-xs text-zinc-500">~{session.target_duration_minutes} min · Locked</span>
+                  </div>
+                );
+              }
 
-          return (
-            <section key={session.day} className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-6">
-              <div className="flex items-baseline justify-between gap-3 mb-1">
-                <h2 className="text-lg font-semibold text-white">
-                  Day {session.day} — {session.theme}
-                </h2>
-                <span className="text-xs text-zinc-400">
-                  ~{session.target_duration_minutes} min{completed ? " · Completed" : ""}
-                </span>
-              </div>
-              <p className="text-sm text-zinc-400 mb-5">{session.explanation}</p>
-              <div className="flex flex-col gap-2.5">
-                {session.drills.map((entry) => {
-                  const drill = drillsById[entry.drillId];
-                  if (!drill) return null;
-                  return (
-                    <DrillChecklistItem
-                      key={entry.drillId}
-                      drill={drill}
-                      repsDuration={entry.reps_duration}
-                      completed={dayProgress?.completed_drill_ids.includes(entry.drillId) ?? false}
-                      readOnly
-                    />
-                  );
-                })}
-              </div>
-            </section>
-          );
-        })}
-      </div>
+              return (
+                <section key={session.day} className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-6">
+                  <div className="flex items-baseline justify-between gap-3 mb-1">
+                    <h3 className="text-lg font-semibold text-white">
+                      Day {session.day} — {session.theme}
+                    </h3>
+                    <span className="text-xs text-zinc-400">
+                      ~{session.target_duration_minutes} min{completed ? " · Completed" : ""}
+                    </span>
+                  </div>
+                  {session.explanation && <p className="text-sm text-zinc-400 mb-5">{session.explanation}</p>}
+                  <div className="flex flex-col gap-2.5">
+                    {session.drills.map((entry) => {
+                      const drill = drillsById[entry.drillId];
+                      if (!drill) return null;
+                      return (
+                        <DrillChecklistItem
+                          key={entry.drillId}
+                          drill={drill}
+                          repsDuration={entry.reps_duration}
+                          completed={dayProgress?.completed_drill_ids.includes(entry.drillId) ?? false}
+                          readOnly
+                        />
+                      );
+                    })}
+                  </div>
+                </section>
+              );
+            })}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
