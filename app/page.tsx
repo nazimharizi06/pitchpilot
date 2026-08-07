@@ -1,15 +1,16 @@
 import { generatePlan } from "@/lib/engine/generatePlan";
+import { SKILL_CATEGORIES } from "@/lib/types";
 import type { IntakeData } from "@/lib/types";
+import { drills } from "@/lib/data/drills";
 import { Header } from "@/components/landing/Header";
 import { Hero } from "@/components/landing/Hero";
 import { HowItWorks } from "@/components/landing/HowItWorks";
+import { PersonalizationSection } from "@/components/landing/PersonalizationSection";
 import { GoalsGrid } from "@/components/landing/GoalsGrid";
 import { SamplePlanSection } from "@/components/landing/SamplePlanSection";
-import { WhyDifferentSection } from "@/components/landing/WhyDifferentSection";
 import { FounderSection } from "@/components/landing/FounderSection";
 import { PricingSection } from "@/components/landing/PricingSection";
 import { FAQ } from "@/components/landing/FAQ";
-import { ParentTrustSection } from "@/components/landing/ParentTrustSection";
 import { CTASection } from "@/components/landing/CTASection";
 import { Footer } from "@/components/landing/Footer";
 
@@ -54,15 +55,19 @@ export default async function Home() {
     <>
       <Header dark />
       <main className="bg-zinc-950">
-        <Hero previewSession={demoPlan.sessions[0]} weekThemes={weekThemes} />
-        <HowItWorks />
+        <Hero
+          previewSession={demoPlan.sessions[0]}
+          weekThemes={weekThemes}
+          categoryCount={SKILL_CATEGORIES.length}
+          drillCount={drills.length}
+        />
+        <HowItWorks previewSession={demoPlan.sessions[0]} />
+        <PersonalizationSection />
         <GoalsGrid />
         <SamplePlanSection sessions={demoPlan.sessions} />
-        <WhyDifferentSection />
         <FounderSection />
         <PricingSection />
         <FAQ />
-        <ParentTrustSection />
         <CTASection />
       </main>
       <Footer />

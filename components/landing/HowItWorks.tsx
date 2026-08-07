@@ -1,61 +1,54 @@
-import { ClipboardList, Sparkles, CalendarCheck } from "lucide-react";
+import { ClipboardList, Sparkles, CalendarCheck, Flame } from "lucide-react";
+import { PlanPreviewCard } from "@/components/landing/PlanPreviewCard";
+import { Reveal } from "@/components/landing/Reveal";
+import type { PlanSession } from "@/lib/types";
 
 const STEPS = [
-  {
-    number: "01",
-    icon: ClipboardList,
-    title: "Tell us about your player",
-    body: "Age, level, goals, equipment, and space — a quick multi-step intake, not a long form.",
-  },
-  {
-    number: "02",
-    icon: Sparkles,
-    title: "Get a real plan",
-    body: "Rule-based filtering plus AI judgment balance every goal you picked into a week that actually fits.",
-  },
-  {
-    number: "03",
-    icon: CalendarCheck,
-    title: "Train, session by session",
-    body: "One session unlocks at a time, with warm-up and cool-down built in every time.",
-  },
+  { icon: ClipboardList, label: "Answer a few questions" },
+  { icon: Sparkles, label: "PitchPilot builds your plan" },
+  { icon: CalendarCheck, label: "Open today's session" },
+  { icon: Flame, label: "Train" },
 ];
 
-export function HowItWorks() {
+export function HowItWorks({ previewSession }: { previewSession: PlanSession }) {
   return (
     <section id="how-it-works" className="relative bg-zinc-950 px-6 py-24">
-      <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-16">
-          <p className="text-sm font-medium text-emerald-400 mb-2">How it works</p>
+      <div className="max-w-5xl mx-auto">
+        <Reveal className="text-center mb-16">
+          <p className="text-sm font-medium text-emerald-400 mb-2">See it in action</p>
           <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight text-white">
-            From intake to training in minutes
+            From questions to training, in minutes
           </h2>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 relative">
+        </Reveal>
+
+        <Reveal delay={100} className="grid grid-cols-2 sm:grid-cols-4 gap-4 relative mb-14">
           <div
             aria-hidden
-            className="hidden sm:block absolute top-[68px] left-[16.5%] right-[16.5%] border-t-2 border-dashed border-emerald-900"
+            className="hidden sm:block absolute top-7 left-[12.5%] right-[12.5%] border-t-2 border-dashed border-emerald-900"
           />
-          {STEPS.map((step) => (
-            <div
-              key={step.title}
-              className="relative overflow-hidden flex flex-col items-center text-center rounded-2xl border border-zinc-800 bg-zinc-900/40 p-6 pt-10 hover:border-emerald-800 hover:-translate-y-0.5 transition-all"
-            >
-              <span
-                aria-hidden
-                className="absolute -top-3 -right-2 text-7xl font-bold text-white/[0.04] select-none"
-              >
-                {step.number}
-              </span>
-              <div className="h-14 w-14 rounded-2xl bg-emerald-600 text-white flex items-center justify-center mb-5 shadow-lg shadow-emerald-600/30 relative z-10">
+          {STEPS.map((step, i) => (
+            <div key={step.label} className="relative flex flex-col items-center text-center gap-3">
+              <div className="relative z-10 h-14 w-14 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-lg shadow-emerald-600/30">
                 <step.icon className="h-6 w-6" />
               </div>
-              <p className="text-xs font-semibold text-emerald-400 mb-1">STEP {step.number}</p>
-              <h3 className="font-semibold text-white mb-2">{step.title}</h3>
-              <p className="text-sm text-zinc-400 max-w-xs">{step.body}</p>
+              <p className="text-sm font-medium text-zinc-300">
+                <span className="text-emerald-400 mr-1">{i + 1}.</span>
+                {step.label}
+              </p>
             </div>
           ))}
-        </div>
+        </Reveal>
+
+        <Reveal delay={200} className="flex justify-center">
+          <div className="rounded-[2rem] border-4 border-zinc-800 bg-zinc-900/60 p-3 shadow-2xl shadow-emerald-950/30">
+            <div className="flex items-center gap-1.5 px-2 pb-2">
+              <span className="h-2 w-2 rounded-full bg-zinc-700" />
+              <span className="h-2 w-2 rounded-full bg-zinc-700" />
+              <span className="h-2 w-2 rounded-full bg-zinc-700" />
+            </div>
+            <PlanPreviewCard session={previewSession} />
+          </div>
+        </Reveal>
       </div>
     </section>
   );

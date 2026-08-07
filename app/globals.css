@@ -60,3 +60,37 @@ body {
 .animate-indeterminate-bar {
   animation: indeterminate-bar 1.6s ease-in-out infinite;
 }
+
+/* On-scroll entrance used by components/landing/Reveal.tsx. Elements start in
+   this state only after JS confirms an IntersectionObserver is watching them
+   (see Reveal.tsx) — server-rendered markup and no-JS visitors get the final
+   visible state directly, so nothing is ever invisible without a reveal. */
+@keyframes fade-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-slide-up {
+  animation: fade-slide-up 0.6s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-gentle-float,
+  .animate-fade-slide-up {
+    animation: none;
+  }
+}
+
+/* Soft edge fade for horizontal scroll-snap rows (Training Areas, the
+   See-It-In-Action flow on small screens) so the clipped edge reads as
+   intentional rather than a hard cutoff. */
+.scroll-fade-x {
+  mask-image: linear-gradient(to right, transparent, black 24px, black calc(100% - 24px), transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, black 24px, black calc(100% - 24px), transparent);
+}

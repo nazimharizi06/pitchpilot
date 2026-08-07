@@ -16,14 +16,14 @@ export function CTASection() {
             <Trophy className="h-6 w-6" />
           </div>
           <h2 className="text-3xl sm:text-4xl font-semibold text-white mb-4 relative">
-            Give them a plan built for them.
+            Your next session is one intake away.
           </h2>
           <p className="text-emerald-100 mb-8 max-w-md mx-auto relative">
-            7 days free. A few minutes of intake. A full week of personalized training on the other side.
+            A few minutes of questions. A 3-week program built around you on the other side.
           </p>
           <Link href="/#pricing" className="relative inline-block">
             <Button variant="inverse" className="text-base px-6 py-3">
-              Start your free trial
+              Start Free for 7 Days
             </Button>
           </Link>
         </div>

@@ -37,9 +37,9 @@ const TIERS: {
     popular: true,
     features: [
       "Everything in Base",
-      "AI-generated 3-week training program",
-      "Richer AI explanations for every session",
-      "Retake your intake once you finish your 3 weeks",
+      "AI-generated 3-week program",
+      "AI explanation for every session",
+      "Retake intake once you finish",
     ],
   },
   {
@@ -51,9 +51,9 @@ const TIERS: {
     popular: false,
     features: [
       "Everything in Pro",
-      "Retake intake anytime, even mid-program",
+      "Retake intake anytime",
       "Priority support",
-      "Drill demonstration videos (coming soon)",
+      "Drill videos (coming soon)",
     ],
   },
 ];
@@ -180,7 +180,7 @@ export function PricingSection() {
                 disabled={loadingTier !== null}
                 onClick={() => startCheckout(tier.id, interval)}
               >
-                {loadingTier === tier.id ? "Redirecting..." : "Start free trial"}
+                {loadingTier === tier.id ? "Redirecting..." : "Start Free for 7 Days"}
               </Button>
             </div>
           ))}
