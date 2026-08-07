@@ -21,21 +21,26 @@ export async function POST(request: Request) {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return NextResponse.json({ error: "Sign in and subscribe to Pro or Premium to generate a plan." }, { status: 401 });
+    return NextResponse.json({ error: "Sign in to build your training plan." }, { status: 401 });
   }
 
-  const subscription = await getActiveSubscription(supabase, user.id);
-  if (!meetsTier(subscription, "pro")) {
-    return NextResponse.json({ error: "Upgrade to Pro or Premium to generate a training plan." }, { status: 403 });
-  }
+  // A first plan is free for any signed-in account — this is the free preview
+  // shown before payment. `plans.user_id` is a primary key (one row per user),
+  // so "does a row already exist" is exactly "has this account already used its
+  // free generation" — no separate flag needed. Regenerating an existing plan
+  // still requires an active Pro/Premium subscription, exactly as before this
+  // change.
+  const { data: existingPlan } = await supabase.from("plans").select("user_id").eq("user_id", user.id).maybeSingle();
 
-  // Pro can only start a new 3-week program once their current one is fully
-  // completed; Premium can regenerate anytime, even mid-program. Only applies to
-  // regenerating an existing plan — a first-time request never has a `plans` row
-  // yet, so it's never blocked.
-  if (subscription!.tier === "pro") {
-    const { data: existingPlan } = await supabase.from("plans").select("user_id").eq("user_id", user.id).maybeSingle();
-    if (existingPlan) {
+  if (existingPlan) {
+    const subscription = await getActiveSubscription(supabase, user.id);
+    if (!meetsTier(subscription, "pro")) {
+      return NextResponse.json({ error: "Upgrade to Pro or Premium to build a new training plan." }, { status: 403 });
+    }
+
+    // Pro can only start a new 3-week program once their current one is fully
+    // completed; Premium can regenerate anytime, even mid-program.
+    if (subscription!.tier === "pro") {
       const { data: progressRows } = await supabase
         .from("session_progress")
         .select("completed_at")

@@ -1,11 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { track } from "@vercel/analytics";
 import { Sparkles, Repeat2, ShieldCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { getActiveSubscription, meetsTier } from "@/lib/subscriptions";
 import { Header } from "@/components/landing/Header";
 import { StepIndicator } from "@/components/intake/StepIndicator";
 import { TipCard } from "@/components/intake/TipCard";
@@ -14,18 +13,18 @@ import { GoalsStep } from "@/components/intake/GoalsStep";
 import { AvailabilityStep } from "@/components/intake/AvailabilityStep";
 import { SafetyStep } from "@/components/intake/SafetyStep";
 import { Button } from "@/components/ui/Button";
-import { LoadingScreen } from "@/components/dashboard/LoadingScreen";
 import { PlanGeneratingScreen } from "@/components/dashboard/PlanGeneratingScreen";
 import { profileSchema, goalsStepSchema, availabilityStepSchema } from "@/lib/validation";
+import { saveIntakeDraft, loadIntakeDraft, clearIntakeDraft } from "@/lib/intakeDraft";
 import type { GoalsAndAssessment, IntakeData } from "@/lib/types";
 
-const STEPS = ["Profile", "Goals", "Availability", "Safety"];
+const STEPS = ["Your game", "Goals", "Setup", "Finish"];
 
 const STEP_COPY = [
-  { title: "Let's get to know you", subtitle: "This helps us personalize your plan." },
-  { title: "What do you want to focus on?", subtitle: "Pick everything you want to work on — we'll build your week around it." },
-  { title: "When can you train?", subtitle: "We'll build your plan around your schedule." },
-  { title: "Anything we should know?", subtitle: "Help us keep you safe." },
+  { title: "Tell us about your game.", subtitle: "The basics — nothing that slows you down." },
+  { title: "What do you want to work on?", subtitle: "Pick everything that matters to you." },
+  { title: "What do you have to train with?", subtitle: "We'll only pick drills that fit." },
+  { title: "Ready to build your plan", subtitle: "One last thing before we get started." },
 ];
 
 const TIPS = [
@@ -38,10 +37,10 @@ const TIPS = [
 const initialProfile: ProfileForm = {
   account_type: "player",
   age: 12,
-  height_in: 60,
-  weight_lb: 100,
-  gender: "prefer_not_to_say",
-  dominant_foot: "right",
+  height_in: null,
+  weight_lb: null,
+  gender: null,
+  dominant_foot: null,
   position: null,
   playing_level: "beginner",
   injury_notes: null,
@@ -55,43 +54,73 @@ const initialGoals: GoalsAndAssessment = {
   equipment_available: [],
 };
 
+const STEP_EVENTS = ["onboarding_profile_completed", "onboarding_goals_completed", "onboarding_setup_completed"] as const;
+
 export default function IntakePage() {
   const router = useRouter();
-  const [checkingAccess, setCheckingAccess] = useState(true);
-  const [step, setStep] = useState(0);
-  const [profile, setProfile] = useState<ProfileForm>(initialProfile);
-  const [goalsAndAssessment, setGoalsAndAssessment] = useState<GoalsAndAssessment>(initialGoals);
-  const [waiverAccepted, setWaiverAccepted] = useState(false);
-  const [guardianName, setGuardianName] = useState<string | null>(null);
-  const [guardianEmail, setGuardianEmail] = useState<string | null>(null);
+  // Restored synchronously via lazy initializers (not an effect — sessionStorage
+  // is available at first client render) so back/forward/refresh, and the
+  // redirect through /login for anyone who wasn't signed in yet, don't lose
+  // progress. Read once per mount; a fresh visitor just gets the defaults.
+  const initialDraft = useState(() => loadIntakeDraft())[0];
+  const [step, setStep] = useState(() => initialDraft?.step ?? 0);
+  const [profile, setProfile] = useState<ProfileForm>(() => initialDraft?.profile ?? initialProfile);
+  const [goalsAndAssessment, setGoalsAndAssessment] = useState<GoalsAndAssessment>(
+    () => initialDraft?.goalsAndAssessment ?? initialGoals
+  );
+  const [waiverAccepted, setWaiverAcceptedState] = useState(() => initialDraft?.waiverAccepted ?? false);
+  const [guardianName, setGuardianName] = useState<string | null>(() => initialDraft?.guardianName ?? null);
+  const [guardianEmail, setGuardianEmail] = useState<string | null>(() => initialDraft?.guardianEmail ?? null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const startedTracked = useRef(false);
 
   const isMinorPlayer = profile.account_type === "player" && profile.age < 18;
 
-  // Intake now runs after checkout, not before it — a user only ends up here
-  // already signed in and already Pro/Premium (routed by app/(dashboard)/plan/page.tsx).
-  // Still worth checking upfront rather than only on submit, so someone who lands
-  // here directly (a stale link, Base tier, or logged out) doesn't fill out the
-  // whole wizard before finding out they can't submit it.
+  function setWaiverAccepted(val: boolean) {
+    setWaiverAcceptedState(val);
+    if (val) track("onboarding_waiver_accepted", {});
+  }
+
+  // If the restored draft was marked ready-to-submit (they'd already clicked
+  // "Build My Plan" before signing in) and a session now exists, submit
+  // immediately — no second click needed on return from /login or Google.
   useEffect(() => {
+    if (!initialDraft?.readyToSubmit) return;
     (async () => {
       const supabase = createClient();
       const {
         data: { user },
       } = await supabase.auth.getUser();
-      if (!user) {
-        router.replace("/login?next=/intake");
-        return;
-      }
-      const subscription = await getActiveSubscription(supabase, user.id);
-      if (!meetsTier(subscription, "pro")) {
-        router.replace(subscription?.tier === "base" ? "/build" : "/#pricing");
-        return;
-      }
-      setCheckingAccess(false);
+      if (!user) return;
+      const intake: IntakeData = {
+        profile: { id: crypto.randomUUID(), ...initialDraft.profile },
+        goalsAndAssessment: initialDraft.goalsAndAssessment,
+        waiverAccepted: initialDraft.waiverAccepted,
+        guardianName: initialDraft.guardianName,
+        guardianEmail: initialDraft.guardianEmail,
+      };
+      submitIntake(intake);
     })();
-  }, [router]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Persist the draft whenever it changes.
+  useEffect(() => {
+    saveIntakeDraft({
+      step,
+      profile,
+      goalsAndAssessment,
+      waiverAccepted,
+      guardianName,
+      guardianEmail,
+      readyToSubmit: false,
+    });
+    if (!startedTracked.current) {
+      startedTracked.current = true;
+      track("onboarding_started", {});
+    }
+  }, [step, profile, goalsAndAssessment, waiverAccepted, guardianName, guardianEmail]);
 
   function goNext() {
     setError(null);
@@ -107,12 +136,62 @@ export default function IntakePage() {
       const result = availabilityStepSchema.safeParse(goalsAndAssessment);
       if (!result.success) return setError(result.error.issues[0]?.message ?? "Check your availability");
     }
+    track(STEP_EVENTS[step], {});
     setStep((s) => Math.min(s + 1, STEPS.length - 1));
   }
 
   function goBack() {
     setError(null);
     setStep((s) => Math.max(s - 1, 0));
+  }
+
+  async function submitIntake(intake: IntakeData) {
+    setSubmitting(true);
+    setError(null);
+    track("plan_generation_started", {});
+    try {
+      const res = await fetch("/api/generate-plan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(intake),
+      });
+
+      if (res.status === 401) {
+        // Shouldn't happen on the auto-resume path (auth was just confirmed),
+        // but a session can still expire between the check and the request.
+        // Submission only ever happens from the last step, so that's always
+        // the right place to resume — no risk of a stale `step` closure here.
+        saveIntakeDraft({
+          step: STEPS.length - 1,
+          profile: intake.profile,
+          goalsAndAssessment: intake.goalsAndAssessment,
+          waiverAccepted: intake.waiverAccepted,
+          guardianName: intake.guardianName,
+          guardianEmail: intake.guardianEmail,
+          readyToSubmit: true,
+        });
+        window.location.assign("/login?next=/intake");
+        return;
+      }
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error ?? "Couldn't build your plan right now. Your answers are saved — try again.");
+      }
+      const isMinor = intake.profile.account_type === "player" && intake.profile.age < 18;
+      track("intake_completed", { isMinorPlayer: isMinor });
+      track("plan_generation_completed", {});
+      clearIntakeDraft();
+      if (isMinor) {
+        // Guardian-consent path: no plan yet, nothing to reveal — /plan shows
+        // the "waiting on your guardian" screen instead.
+        router.push("/plan");
+      } else {
+        router.push("/plan?reveal=1");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong. Your answers are saved — try again.");
+      setSubmitting(false);
+    }
   }
 
   async function handleSubmit() {
@@ -130,6 +209,25 @@ export default function IntakePage() {
       return;
     }
 
+    const supabase = createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      saveIntakeDraft({
+        step,
+        profile,
+        goalsAndAssessment,
+        waiverAccepted,
+        guardianName,
+        guardianEmail,
+        readyToSubmit: true,
+      });
+      router.push("/login?next=/intake");
+      return;
+    }
+
     const intake: IntakeData = {
       profile: { id: crypto.randomUUID(), ...profile },
       goalsAndAssessment,
@@ -137,38 +235,7 @@ export default function IntakePage() {
       guardianName,
       guardianEmail,
     };
-
-    setSubmitting(true);
-    try {
-      const res = await fetch("/api/generate-plan", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(intake),
-      });
-
-      if (res.status === 401) {
-        window.location.assign("/login?next=/intake");
-        return;
-      }
-      if (res.status === 403) {
-        window.location.assign("/#pricing");
-        return;
-      }
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.error ?? "Couldn't generate your plan. Please try again.");
-      }
-      track("intake_completed", { isMinorPlayer });
-      router.push("/plan");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
-  if (checkingAccess) {
-    return <LoadingScreen message="Loading..." />;
+    await submitIntake(intake);
   }
 
   // Real AI generation only happens for the non-minor path (the minor path just
@@ -258,10 +325,10 @@ export default function IntakePage() {
                   {submitting
                     ? isMinorPlayer
                       ? "Sending..."
-                      : "Building your plan..."
+                      : "Building..."
                     : isMinorPlayer
                       ? "Send for guardian confirmation"
-                      : "Generate my plan"}
+                      : "Build My Plan"}
                 </Button>
               )}
             </div>

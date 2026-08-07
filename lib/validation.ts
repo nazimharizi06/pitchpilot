@@ -4,10 +4,12 @@ import { POSITIONS } from "@/lib/types";
 export const profileSchema = z.object({
   account_type: z.enum(["parent", "player"]),
   age: z.coerce.number().int().min(5, "Age must be 5 or older").max(100, "Enter a valid age"),
-  height_in: z.coerce.number().positive("Enter a valid height"),
-  weight_lb: z.coerce.number().positive("Enter a valid weight"),
-  gender: z.enum(["male", "female", "other", "prefer_not_to_say"]),
-  dominant_foot: z.enum(["left", "right", "both"]),
+  // Not collected in /intake anymore (not used by plan generation) — optionally
+  // filled in later via Settings, into the separate `profiles` table.
+  height_in: z.coerce.number().positive("Enter a valid height").nullable(),
+  weight_lb: z.coerce.number().positive("Enter a valid weight").nullable(),
+  gender: z.enum(["male", "female", "other", "prefer_not_to_say"]).nullable(),
+  dominant_foot: z.enum(["left", "right", "both"]).nullable(),
   position: z.enum(POSITIONS).nullable(),
   playing_level: z.enum(["beginner", "intermediate", "advanced"]),
   injury_notes: z.string().trim().max(1000).nullable(),

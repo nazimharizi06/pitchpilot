@@ -1,8 +1,10 @@
 "use client";
 
+import { useState } from "react";
+import { ShieldCheck } from "lucide-react";
 import type { AccountType } from "@/lib/types";
 import { Field, darkInputClass } from "@/components/ui/Field";
-import { WaiverText } from "@/components/shared/WaiverText";
+import { WaiverModal } from "@/components/intake/WaiverModal";
 
 const MINOR_AGE_CUTOFF = 18;
 
@@ -29,13 +31,14 @@ export function SafetyStep({
   waiverAccepted: boolean;
   onWaiverChange: (val: boolean) => void;
 }) {
+  const [waiverOpen, setWaiverOpen] = useState(false);
   const isMinorPlayer = accountType === "player" && age < MINOR_AGE_CUTOFF;
 
   const acknowledgmentLabel = isMinorPlayer
-    ? "I am this player's parent or legal guardian. Once I confirm via the email we'll send, I agree to the waiver above on their behalf."
+    ? "I am this player's parent or legal guardian. Once I confirm via the email we'll send, I agree to the PitchPilot Liability Waiver on their behalf."
     : accountType === "parent"
-      ? "I have read, understood, and agree to the waiver above on behalf of the player."
-      : "I have read, understood, and agree to the waiver above.";
+      ? "I have read and agree to the PitchPilot Liability Waiver on behalf of the player."
+      : "I have read and agree to the PitchPilot Liability Waiver.";
 
   return (
     <div className="flex flex-col gap-5">
@@ -52,8 +55,19 @@ export function SafetyStep({
         />
       </label>
 
-      <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5 text-sm text-zinc-300">
-        <WaiverText />
+      <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5">
+        <div className="flex items-start gap-3 mb-4">
+          <div className="h-9 w-9 rounded-lg bg-emerald-950/60 text-emerald-400 flex items-center justify-center shrink-0">
+            <ShieldCheck className="h-4.5 w-4.5" />
+          </div>
+          <div>
+            <p className="font-medium text-white mb-1">One last thing</p>
+            <p className="text-sm text-zinc-400">
+              Soccer training involves physical activity and a risk of injury. Train within your abilities and
+              stop if something doesn&apos;t feel right.
+            </p>
+          </div>
+        </div>
 
         {isMinorPlayer && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
@@ -82,16 +96,25 @@ export function SafetyStep({
           </div>
         )}
 
-        <label className="flex items-center gap-2 font-medium text-white">
+        <label className="flex items-start gap-2.5 text-sm text-white mb-2">
           <input
             type="checkbox"
             checked={waiverAccepted}
             onChange={(e) => onWaiverChange(e.target.checked)}
-            className="h-4 w-4 accent-emerald-500 shrink-0"
+            className="h-4 w-4 mt-0.5 accent-emerald-500 shrink-0"
           />
           {acknowledgmentLabel}
         </label>
+        <button
+          type="button"
+          onClick={() => setWaiverOpen(true)}
+          className="text-sm text-emerald-400 hover:text-emerald-300 underline underline-offset-2"
+        >
+          Read full waiver
+        </button>
       </div>
+
+      {waiverOpen && <WaiverModal onClose={() => setWaiverOpen(false)} />}
     </div>
   );
 }

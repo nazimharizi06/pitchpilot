@@ -121,10 +121,14 @@ export interface UserProfile {
   id: string;
   account_type: AccountType;
   age: number;
-  height_in: number;
-  weight_lb: number;
-  gender: Gender;
-  dominant_foot: DominantFoot;
+  // Not read anywhere in plan generation (lib/engine/*, lib/ai/*) — kept nullable
+  // since /intake no longer asks for these; collected later (optionally) via
+  // Settings (components/settings/PlayerProfileForm.tsx) into the separate
+  // `profiles` table instead, decoupled from this per-plan intake snapshot.
+  height_in: number | null;
+  weight_lb: number | null;
+  gender: Gender | null;
+  dominant_foot: DominantFoot | null;
   position: Position | null;
   playing_level: Level;
   injury_notes: string | null;

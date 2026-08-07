@@ -2,17 +2,18 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { Target, ClipboardList, TrendingUp, CalendarCheck, ListChecks, Repeat2 } from "lucide-react";
+import { Target, Wrench, ClipboardList, CalendarCheck, ListChecks, Repeat2 } from "lucide-react";
 
 // Cosmetic step labels loosely describing the real phases of
-// lib/engine/generatePlan.ts (goal weighting → drill filtering/scheduling →
-// AI-written explanations) — auto-advance on a timer, not real backend
-// telemetry, purely to make the wait feel purposeful rather than a fake
-// measured progress claim.
+// lib/engine/generatePlan.ts (goal weighting → equipment/space filtering →
+// drill selection/session assembly → AI-written explanations) — auto-advance
+// on a timer, not real backend telemetry, purely to make the wait feel
+// purposeful rather than a fake measured progress claim.
 const STEPS = [
-  { icon: Target, label: "Analyzing your goals and playing style" },
-  { icon: ClipboardList, label: "Selecting the right drills for you" },
-  { icon: TrendingUp, label: "Balancing your week with AI judgment" },
+  { icon: Target, label: "Looking at your goals" },
+  { icon: Wrench, label: "Matching your setup" },
+  { icon: ClipboardList, label: "Choosing your sessions" },
+  { icon: Repeat2, label: "Balancing your week" },
 ];
 
 const WHAT_YOU_GET = [
@@ -36,11 +37,9 @@ export function PlanGeneratingScreen() {
     <div className="px-6 py-12 max-w-4xl mx-auto">
       <p className="text-xs font-semibold tracking-wide text-emerald-400 mb-2">YOUR TRAINING PLAN</p>
       <h1 className="text-4xl font-semibold text-white mb-3">
-        Your plan is loading<span className="text-emerald-400">.</span>
+        Building your plan<span className="text-emerald-400">...</span>
       </h1>
-      <p className="text-zinc-400 max-w-lg mb-10">
-        We&apos;re building your personalized training plan based on your intake.
-      </p>
+      <p className="text-zinc-400 max-w-lg mb-10">We&apos;re putting your training week together.</p>
 
       <div className="flex items-center gap-2 mb-10">
         {STEPS.map((step, i) => (

@@ -51,7 +51,7 @@ export function Hero({
           <p className="text-lg text-zinc-400 mb-8 max-w-lg">Your game. Your goals. Your training plan.</p>
 
           <div className="flex flex-col sm:flex-row gap-3 mb-8">
-            <Link href="/#pricing" onClick={() => track("start_trial_click", { location: "hero" })}>
+            <Link href="/intake" onClick={() => track("start_trial_click", { location: "hero" })}>
               <Button className="w-full sm:w-auto text-base px-6 py-3 gap-2">
                 Start Free for 7 Days
                 <ArrowRight className="h-4 w-4" />

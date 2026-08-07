@@ -6,57 +6,10 @@ import { Check } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { PhoneNumberModal } from "@/components/landing/PhoneNumberModal";
 import { ComparisonTable } from "@/components/landing/ComparisonTable";
+import { PRICING_TIERS } from "@/lib/pricingTiers";
 import type { SubscriptionTier } from "@/lib/subscriptions";
 
 type BillingInterval = "monthly" | "annual";
-
-const TIERS: {
-  id: SubscriptionTier;
-  name: string;
-  monthlyPrice: number;
-  annualMonthlyPrice: number;
-  annualBilledPrice: number;
-  popular: boolean;
-  features: string[];
-}[] = [
-  {
-    id: "base",
-    name: "Base",
-    monthlyPrice: 10,
-    annualMonthlyPrice: 8,
-    annualBilledPrice: 96,
-    popular: false,
-    features: ["Browse the full drill library", "Filter by skill, level, equipment, and space"],
-  },
-  {
-    id: "pro",
-    name: "Pro",
-    monthlyPrice: 20,
-    annualMonthlyPrice: 16,
-    annualBilledPrice: 192,
-    popular: true,
-    features: [
-      "Everything in Base",
-      "AI-generated 3-week program",
-      "AI explanation for every session",
-      "Retake intake once you finish",
-    ],
-  },
-  {
-    id: "premium",
-    name: "Premium",
-    monthlyPrice: 50,
-    annualMonthlyPrice: 40,
-    annualBilledPrice: 480,
-    popular: false,
-    features: [
-      "Everything in Pro",
-      "Retake intake anytime",
-      "Priority support",
-      "Drill videos (coming soon)",
-    ],
-  },
-];
 
 export function PricingSection() {
   const [interval, setBillingInterval] = useState<BillingInterval>("monthly");
@@ -141,7 +94,7 @@ export function PricingSection() {
           </div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 items-start">
-          {TIERS.map((tier) => (
+          {PRICING_TIERS.map((tier) => (
             <div
               key={tier.id}
               className={`relative rounded-2xl p-6 flex flex-col bg-zinc-900/40 ${

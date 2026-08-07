@@ -39,8 +39,8 @@ export function Header({ dark = false }: { dark?: boolean }) {
         </nav>
         <div className="flex items-center gap-4">
           <UserMenu dark={dark} />
-          <Link href="/#pricing">
-            <Button className="text-sm px-4 py-2">Start free trial</Button>
+          <Link href="/intake">
+            <Button className="text-sm px-4 py-2">Start Free</Button>
           </Link>
         </div>
       </div>

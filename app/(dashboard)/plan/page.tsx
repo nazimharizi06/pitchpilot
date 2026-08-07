@@ -21,6 +21,8 @@ import { StatCard } from "@/components/dashboard/StatCard";
 import { DrillChecklistItem } from "@/components/dashboard/DrillChecklistItem";
 import { LoadingScreen } from "@/components/dashboard/LoadingScreen";
 import { WaitingForGuardianScreen } from "@/components/dashboard/WaitingForGuardianScreen";
+import { PlanPreviewLocked } from "@/components/dashboard/PlanPreviewLocked";
+import { PlanRevealScreen } from "@/components/dashboard/PlanRevealScreen";
 import type { Drill, PlanDrillEntry } from "@/lib/types";
 
 // Delays between retries while confirming subscription status — absorbs the short
@@ -42,6 +44,14 @@ export default function MyPlanPage() {
   const [loaded, setLoaded] = useState(false);
   const [awaitingGuardian, setAwaitingGuardian] = useState(false);
   const [awaitingGuardianName, setAwaitingGuardianName] = useState<string | null>(null);
+  const [hasActiveSubscription, setHasActiveSubscription] = useState(false);
+  // Lazy initializer (not an effect) — avoids the useSearchParams/Suspense
+  // requirement on a page that's already entirely client-rendered, and reads
+  // fine at first client render since this only affects what shows *after*
+  // `loaded` becomes true (every earlier render path is a loading state).
+  const [showReveal, setShowReveal] = useState(
+    () => typeof window !== "undefined" && new URLSearchParams(window.location.search).get("reveal") === "1"
+  );
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
@@ -77,6 +87,18 @@ export default function MyPlanPage() {
 
       const loadedState = await loadPlanState(supabase, user.id);
       if (loadedState) {
+        let subscription = await getActiveSubscription(supabase, user.id);
+        // Just back from Stripe (the locked preview's "Start My Free Trial" CTA
+        // redirects here with ?checkout=success) — the webhook that activates
+        // `subscriptions` can lag a beat behind the redirect, so a few retries
+        // absorb that race before falling back to the locked view.
+        const justCheckedOut = new URLSearchParams(window.location.search).get("checkout") === "success";
+        for (let attempt = 0; justCheckedOut && !subscription && attempt < RETRY_DELAYS_MS.length; attempt++) {
+          await new Promise((resolve) => setTimeout(resolve, RETRY_DELAYS_MS[attempt]));
+          subscription = await getActiveSubscription(supabase, user.id);
+        }
+        setHasActiveSubscription(Boolean(subscription));
+        if (!subscription) track("plan_preview_viewed", {});
         setState(loadedState);
         setLoaded(true);
         return;
@@ -166,6 +188,14 @@ export default function MyPlanPage() {
 
   if (!loaded || !state) {
     return <LoadingScreen message="Loading your plan..." />;
+  }
+
+  if (showReveal) {
+    return <PlanRevealScreen plan={state.plan} onContinue={() => setShowReveal(false)} />;
+  }
+
+  if (!hasActiveSubscription) {
+    return <PlanPreviewLocked plan={state.plan} />;
   }
 
   const { plan, progress } = state;

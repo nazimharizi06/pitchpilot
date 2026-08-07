@@ -21,7 +21,7 @@ export function CTASection() {
           <p className="text-emerald-100 mb-8 max-w-md mx-auto relative">
             A few minutes of questions. A 3-week program built around you on the other side.
           </p>
-          <Link href="/#pricing" className="relative inline-block">
+          <Link href="/intake" className="relative inline-block">
             <Button variant="inverse" className="text-base px-6 py-3">
               Start Free for 7 Days
             </Button>

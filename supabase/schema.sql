@@ -113,3 +113,20 @@ create table public.guardian_verifications (
 alter table public.guardian_verifications enable row level security;
 create policy "Users can read their own guardian verification" on public.guardian_verifications
   for select using (auth.uid() = user_id);
+
+-- Optional profile details that are collected but never read by plan generation
+-- (see lib/engine/generatePlan.ts, lib/engine/filter.ts, lib/ai/*) — moved out of
+-- the /intake wizard and into Settings (components/settings/PlayerProfileForm.tsx)
+-- so the path to a first plan stays short. All nullable; a user may never fill
+-- these in and nothing downstream depends on them.
+create table public.profiles (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  height_in numeric,
+  weight_lb numeric,
+  gender text check (gender in ('male', 'female', 'other', 'prefer_not_to_say')),
+  dominant_foot text check (dominant_foot in ('left', 'right', 'both')),
+  updated_at timestamptz not null default now()
+);
+alter table public.profiles enable row level security;
+create policy "Users manage their own profile" on public.profiles
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
