@@ -83,19 +83,15 @@ export async function POST(request: Request) {
         const subscription = await stripe.subscriptions.retrieve(subscriptionId);
         await upsertFromSubscription(admin, userId, customerId, subscription);
 
-        // Record this email + phone in the free-trial-abuse ledger — this is the one
-        // place a subscription is actually granted, so any future signup (even a
-        // different account) with the same email or phone should never get another
-        // trial. See app/api/checkout/route.ts for the eligibility check this feeds.
-        const [{ data: authUser }, { data: phoneRow }] = await Promise.all([
-          admin.auth.admin.getUserById(userId),
-          admin.from("user_phones").select("phone").eq("user_id", userId).maybeSingle(),
-        ]);
-        if (authUser.user?.email && phoneRow?.phone) {
+        // Record this email in the free-trial-abuse ledger — this is the one place
+        // a subscription is actually granted, so any future signup with the same
+        // email should never get another trial. See app/api/checkout/route.ts for
+        // the eligibility check this feeds.
+        const { data: authUser } = await admin.auth.admin.getUserById(userId);
+        if (authUser.user?.email) {
           await admin.from("trial_usage").insert({
             user_id: userId,
             email: authUser.user.email.toLowerCase(),
-            phone: phoneRow.phone,
           });
         }
 

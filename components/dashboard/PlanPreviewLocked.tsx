@@ -4,7 +4,6 @@ import { useState } from "react";
 import { track } from "@vercel/analytics";
 import { Lock, Check } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { PhoneNumberModal } from "@/components/landing/PhoneNumberModal";
 import { PRICING_TIERS } from "@/lib/pricingTiers";
 import { drillsById } from "@/lib/data/drills";
 import type { Plan } from "@/lib/types";
@@ -18,7 +17,6 @@ import type { SubscriptionTier } from "@/lib/subscriptions";
 export function PlanPreviewLocked({ plan }: { plan: Plan }) {
   const [loadingTier, setLoadingTier] = useState<SubscriptionTier | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [phonePrompt, setPhonePrompt] = useState<SubscriptionTier | null>(null);
 
   const week1 = plan.sessions.filter((s) => s.week === 1);
   const day1 = week1[0];
@@ -29,23 +27,18 @@ export function PlanPreviewLocked({ plan }: { plan: Plan }) {
   const remainingDrillCount = day1Drills.length - teaserDrills.length;
   const otherWeeks = Array.from(new Set(plan.sessions.map((s) => s.week))).filter((w) => w !== 1);
 
-  async function startCheckout(tier: SubscriptionTier, phone?: string) {
+  async function startCheckout(tier: SubscriptionTier) {
     setError(null);
-    if (!phone) track("start_trial_click", { location: "plan_preview", tier });
+    track("start_trial_click", { location: "plan_preview", tier });
     setLoadingTier(tier);
     try {
       const res = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tier, interval: "monthly", phone }),
+        body: JSON.stringify({ tier, interval: "monthly" }),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        if (body.error === "phone_required") {
-          setPhonePrompt(tier);
-          setLoadingTier(null);
-          return;
-        }
         throw new Error(body.error ?? "Couldn't start checkout. Please try again.");
       }
       const { url } = (await res.json()) as { url: string };
@@ -162,14 +155,6 @@ export function PlanPreviewLocked({ plan }: { plan: Plan }) {
           </p>
         )}
       </div>
-
-      {phonePrompt && (
-        <PhoneNumberModal
-          submitting={loadingTier === phonePrompt}
-          onSubmit={(phone) => startCheckout(phonePrompt, phone)}
-          onCancel={() => setPhonePrompt(null)}
-        />
-      )}
     </div>
   );
 }

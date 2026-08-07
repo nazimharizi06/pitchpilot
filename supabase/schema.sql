@@ -77,21 +77,26 @@ alter table public.user_phones enable row level security;
 create policy "Users can read their own phone" on public.user_phones
   for select using (auth.uid() = user_id);
 
--- Append-only ledger of every completed checkout's email + phone. No policies at all —
--- service-role only (same posture as `subscriptions` being webhook-authority data) — so
--- it's never exposed to the browser client. Outlives the `subscriptions` row and the
--- Supabase account itself, so a deleted-and-recreated account, or a brand-new account
--- with a different email but the same phone, still gets caught before another free trial.
+-- Append-only ledger of every completed checkout's email (previously email + phone —
+-- phone-number collection was removed from the checkout flow; the column stays for any
+-- old rows but is no longer required or written). No policies at all — service-role only
+-- (same posture as `subscriptions` being webhook-authority data) — so it's never exposed
+-- to the browser client. Outlives the `subscriptions` row and the Supabase account itself,
+-- so a deleted-and-recreated account still gets caught before another free trial.
 create table public.trial_usage (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references auth.users(id) on delete set null,
   email text not null,
-  phone text not null,
+  phone text,
   used_at timestamptz not null default now()
 );
 alter table public.trial_usage enable row level security;
 create index trial_usage_email_idx on public.trial_usage (email);
 create index trial_usage_phone_idx on public.trial_usage (phone);
+
+-- Run this on an existing database (phone was originally `not null` — without this,
+-- every future trial_usage insert would fail now that checkout no longer collects one):
+-- alter table public.trial_usage alter column phone drop not null;
 
 -- One pending/confirmed guardian-consent request per user (retaking intake as a minor
 -- replaces it with a fresh token+intake). Created + confirmed only by server-side code

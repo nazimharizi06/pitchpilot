@@ -2,8 +2,6 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getStripe } from "@/lib/stripe/client";
-import { phoneSchema } from "@/lib/validation";
-import { normalizePhone } from "@/lib/phone";
 import type { SubscriptionTier } from "@/lib/subscriptions";
 
 type BillingInterval = "monthly" | "annual";
@@ -35,32 +33,14 @@ export async function POST(request: Request) {
   const stripe = getStripe();
   const admin = createAdminClient();
 
-  // Phone number is required once, before a user's very first checkout — it's the
-  // harder-to-fake signal (alongside email) used below to stop free-trial abuse
-  // across deleted/recreated or multiple accounts. Immutable after first insert.
-  const { data: phoneRow } = await admin.from("user_phones").select("phone").eq("user_id", user.id).maybeSingle();
-
-  let phone = phoneRow?.phone ?? null;
-  if (!phone) {
-    const rawPhone = typeof body?.phone === "string" ? body.phone : null;
-    const parsed = rawPhone ? phoneSchema.safeParse(rawPhone) : null;
-    if (!parsed?.success) {
-      return NextResponse.json({ error: "phone_required" }, { status: 400 });
-    }
-    phone = normalizePhone(parsed.data);
-    await admin.from("user_phones").insert({ user_id: user.id, phone });
-  }
-
-  // Free-trial eligibility: has this email or phone ever completed a checkout
-  // before? Checked against the append-only trial_usage ledger (not the mutable
-  // `subscriptions` row), so it survives account deletion and catches a second
-  // account signing up with a different email but the same phone.
+  // Free-trial eligibility: has this email ever completed a checkout before?
+  // Checked against the append-only trial_usage ledger (not the mutable
+  // `subscriptions` row), so it survives account deletion. Email-only by
+  // design — a determined abuser could create another email, but that's an
+  // accepted tradeoff for launch rather than adding more checkout friction.
   const email = user.email.toLowerCase();
-  const [{ data: byEmail }, { data: byPhone }] = await Promise.all([
-    admin.from("trial_usage").select("id").eq("email", email).limit(1).maybeSingle(),
-    admin.from("trial_usage").select("id").eq("phone", phone).limit(1).maybeSingle(),
-  ]);
-  const eligibleForTrial = !byEmail && !byPhone;
+  const { data: byEmail } = await admin.from("trial_usage").select("id").eq("email", email).limit(1).maybeSingle();
+  const eligibleForTrial = !byEmail;
 
   // Reuse the Stripe customer already on file for this user, if any — the
   // subscriptions row is only created once the webhook sees a completed

@@ -4,7 +4,6 @@ import { useState } from "react";
 import { track } from "@vercel/analytics";
 import { Check } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { PhoneNumberModal } from "@/components/landing/PhoneNumberModal";
 import { ComparisonTable } from "@/components/landing/ComparisonTable";
 import { PRICING_TIERS } from "@/lib/pricingTiers";
 import type { SubscriptionTier } from "@/lib/subscriptions";
@@ -15,17 +14,16 @@ export function PricingSection() {
   const [interval, setBillingInterval] = useState<BillingInterval>("monthly");
   const [loadingTier, setLoadingTier] = useState<SubscriptionTier | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [phonePrompt, setPhonePrompt] = useState<{ tier: SubscriptionTier; interval: BillingInterval } | null>(null);
 
-  async function startCheckout(tier: SubscriptionTier, billingInterval: BillingInterval, phone?: string) {
+  async function startCheckout(tier: SubscriptionTier, billingInterval: BillingInterval) {
     setError(null);
-    if (!phone) track("start_trial_click", { location: "pricing", tier, interval: billingInterval });
+    track("start_trial_click", { location: "pricing", tier, interval: billingInterval });
     setLoadingTier(tier);
     try {
       const res = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tier, interval: billingInterval, phone }),
+        body: JSON.stringify({ tier, interval: billingInterval }),
       });
       if (res.status === 401) {
         window.location.assign("/login?next=/%23pricing");
@@ -33,11 +31,6 @@ export function PricingSection() {
       }
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        if (body.error === "phone_required") {
-          setPhonePrompt({ tier, interval: billingInterval });
-          setLoadingTier(null);
-          return;
-        }
         throw new Error(body.error ?? "Couldn't start checkout. Please try again.");
       }
       const { url } = (await res.json()) as { url: string };
@@ -46,13 +39,6 @@ export function PricingSection() {
       setError(err instanceof Error ? err.message : "Something went wrong");
       setLoadingTier(null);
     }
-  }
-
-  function handlePhoneSubmit(phone: string) {
-    if (!phonePrompt) return;
-    const { tier, interval: billingInterval } = phonePrompt;
-    setPhonePrompt(null);
-    startCheckout(tier, billingInterval, phone);
   }
 
   return (
@@ -149,13 +135,6 @@ export function PricingSection() {
         </p>
         <ComparisonTable />
       </div>
-      {phonePrompt && (
-        <PhoneNumberModal
-          submitting={loadingTier === phonePrompt.tier}
-          onSubmit={handlePhoneSubmit}
-          onCancel={() => setPhonePrompt(null)}
-        />
-      )}
     </section>
   );
 }
