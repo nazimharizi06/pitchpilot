@@ -6,7 +6,7 @@ export function PlanPreviewCard({ session }: { session: PlanSession }) {
   const drills = session.drills.map((entry) => drillsById[entry.drillId]).filter(Boolean);
 
   return (
-    <div className="w-full max-w-sm rounded-2xl border border-zinc-800 bg-zinc-900 shadow-lg shadow-black/40 overflow-hidden">
+    <div className="w-full max-w-[21rem] rounded-2xl border border-zinc-800 bg-zinc-900 shadow-lg shadow-black/40 overflow-hidden">
       <div className="bg-gradient-to-br from-emerald-500 to-emerald-700 px-5 py-4 text-white">
         <p className="text-xs font-medium uppercase tracking-wide text-emerald-100">Today</p>
         <p className="text-lg font-semibold">{session.theme}</p>

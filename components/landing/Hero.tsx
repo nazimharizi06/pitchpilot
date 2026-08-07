@@ -32,6 +32,10 @@ export function Hero({
   return (
     <section className="relative overflow-hidden bg-zinc-950">
       <HeroBackgroundImage />
+      {/* Uniform mobile scrim — below md the layout is a single column at
+          nearly full width, so the left-biased desktop gradient below isn't
+          enough on its own to keep text readable everywhere behind it. */}
+      <div aria-hidden className="absolute inset-0 bg-zinc-950/55 md:hidden" />
       <div aria-hidden className="absolute inset-0 bg-gradient-to-r from-zinc-950 via-zinc-950/60 to-transparent" />
       <div aria-hidden className="absolute inset-0 bg-gradient-to-b from-zinc-950/70 via-transparent to-zinc-950" />
       <div
@@ -40,15 +44,15 @@ export function Hero({
       />
       <div aria-hidden className="absolute top-20 right-0 h-72 w-72 rounded-full bg-sky-500/5 blur-3xl" />
 
-      <div className="relative max-w-6xl mx-auto px-6 pt-24 pb-28 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+      <div className="relative max-w-6xl mx-auto px-6 pt-24 pb-28 grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
         <div>
-          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-semibold tracking-tight text-white mb-6 text-balance leading-[1.05]">
+          <h1 className="text-[clamp(2.75rem,1.5rem+5vw,4.5rem)] font-semibold tracking-tight text-white mb-6 text-balance leading-[1.05]">
             Stop guessing{" "}
             <span className="bg-gradient-to-r from-emerald-400 to-emerald-300 bg-clip-text text-transparent">
               what to train.
             </span>
           </h1>
-          <p className="text-lg text-zinc-400 mb-8 max-w-lg">Your game. Your goals. Your training plan.</p>
+          <p className="text-lg text-zinc-300 mb-8 max-w-lg">Your game. Your goals. Your training plan.</p>
 
           <div className="flex flex-col sm:flex-row gap-3 mb-8">
             <Link href="/intake" onClick={() => track("start_trial_click", { location: "hero" })}>
@@ -68,7 +72,7 @@ export function Hero({
             </a>
           </div>
 
-          <div className="flex items-center gap-6 text-sm text-zinc-500 mb-3">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-zinc-400 mb-3">
             <span>
               <strong className="text-white font-semibold">{categoryCount}</strong> training categories
             </span>
@@ -81,15 +85,15 @@ export function Hero({
               <strong className="text-white font-semibold">{positionCount}</strong> positions covered
             </span>
           </div>
-          <p className="text-xs text-zinc-500">7 days free. Cancel before the trial ends and you won&apos;t be charged.</p>
+          <p className="text-xs text-zinc-400">7 days free. Cancel before the trial ends and you won&apos;t be charged.</p>
         </div>
 
-        <div className="relative flex justify-center lg:justify-end">
+        <div className="relative flex justify-center md:justify-end">
           <svg
             aria-hidden
             viewBox="0 0 400 320"
             fill="none"
-            className="absolute -top-16 -left-10 h-[26rem] w-[26rem] text-emerald-400/50 hidden sm:block"
+            className="absolute -top-16 -left-10 h-[26rem] w-[26rem] text-emerald-400/50 hidden lg:block"
           >
             <path
               d="M20 260 C 90 80, 230 40, 360 150"
@@ -101,19 +105,19 @@ export function Hero({
             <circle cx="360" cy="150" r="5" fill="currentColor" />
           </svg>
 
-          <Reveal delay={250} className="absolute -top-10 -right-2 hidden sm:block">
+          <Reveal delay={250} className="absolute -top-24 -right-6 hidden lg:block">
             <div className="rotate-[4deg] animate-gentle-float [animation-delay:-1.5s]">
               <ProgressPreviewCard completed={progressCompleted} total={progressTotal} />
             </div>
           </Reveal>
 
-          <Reveal delay={150} className="absolute -bottom-8 -left-6 hidden sm:block">
+          <Reveal delay={150} className="absolute -bottom-8 -left-6 hidden md:block">
             <div className="rotate-[-6deg] animate-gentle-float">
-              <WeekFocusCard sessionCount={sessionCount} themes={weekThemes} />
+              <WeekFocusCard themes={weekThemes} />
             </div>
           </Reveal>
 
-          <Reveal delay={50} className="relative">
+          <Reveal delay={50} className="relative md:translate-x-8">
             <div className="-rotate-2 animate-gentle-float [animation-delay:-3s]">
               <PlanPreviewCard session={previewSession} />
             </div>
