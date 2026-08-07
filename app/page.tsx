@@ -1,5 +1,5 @@
 import { generatePlan } from "@/lib/engine/generatePlan";
-import { SKILL_CATEGORIES } from "@/lib/types";
+import { POSITIONS, SKILL_CATEGORIES } from "@/lib/types";
 import type { IntakeData } from "@/lib/types";
 import { drills } from "@/lib/data/drills";
 import { Header } from "@/components/landing/Header";
@@ -49,7 +49,8 @@ const DEMO_INTAKE: IntakeData = {
 
 export default async function Home() {
   const demoPlan = await generatePlan(DEMO_INTAKE);
-  const weekThemes = Array.from(new Set(demoPlan.sessions.map((s) => s.theme)));
+  const week1Sessions = demoPlan.sessions.filter((s) => s.week === 1);
+  const weekThemes = Array.from(new Set(week1Sessions.map((s) => s.theme)));
 
   return (
     <>
@@ -58,8 +59,10 @@ export default async function Home() {
         <Hero
           previewSession={demoPlan.sessions[0]}
           weekThemes={weekThemes}
+          sessionCount={week1Sessions.length}
           categoryCount={SKILL_CATEGORIES.length}
           drillCount={drills.length}
+          positionCount={POSITIONS.length}
         />
         <HowItWorks previewSession={demoPlan.sessions[0]} />
         <PersonalizationSection />

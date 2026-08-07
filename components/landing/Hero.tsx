@@ -6,31 +6,42 @@ import { ArrowRight, PlayCircle } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { PlanPreviewCard } from "@/components/landing/PlanPreviewCard";
 import { WeekFocusCard } from "@/components/landing/WeekFocusCard";
+import { ProgressPreviewCard } from "@/components/landing/ProgressPreviewCard";
 import { PitchLines } from "@/components/landing/PitchLines";
-import { HeroVideoBackground } from "@/components/landing/HeroVideoBackground";
+import { HeroBackgroundImage } from "@/components/landing/HeroBackgroundImage";
+import { Reveal } from "@/components/landing/Reveal";
 import type { PlanSession } from "@/lib/types";
 
 export function Hero({
   previewSession,
   weekThemes,
+  sessionCount,
   categoryCount,
   drillCount,
+  positionCount,
 }: {
   previewSession: PlanSession;
   weekThemes: string[];
+  sessionCount: number;
   categoryCount: number;
   drillCount: number;
+  positionCount: number;
 }) {
+  const progressTotal = sessionCount;
+  const progressCompleted = sessionCount > 1 ? sessionCount - 1 : sessionCount;
+
   return (
     <section className="relative overflow-hidden bg-zinc-950">
-      <HeroVideoBackground />
+      <HeroBackgroundImage />
+      <div aria-hidden className="absolute inset-0 bg-gradient-to-r from-zinc-950 via-zinc-950/60 to-transparent" />
+      <div aria-hidden className="absolute inset-0 bg-gradient-to-b from-zinc-950/70 via-transparent to-zinc-950" />
       <PitchLines className="absolute inset-0 h-full w-full text-emerald-500/[0.07]" />
       <div aria-hidden className="absolute inset-0 bg-dot-grid text-white/[0.03]" />
       <div
         aria-hidden
         className="absolute -top-40 left-1/2 -translate-x-1/2 h-[36rem] w-[64rem] rounded-full bg-emerald-500/20 blur-3xl"
       />
-      <div aria-hidden className="absolute top-20 right-0 h-72 w-72 rounded-full bg-sky-500/10 blur-3xl" />
+      <div aria-hidden className="absolute top-20 right-0 h-72 w-72 rounded-full bg-sky-500/5 blur-3xl" />
 
       <div className="relative max-w-6xl mx-auto px-6 pt-24 pb-28 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
         <div>
@@ -40,10 +51,7 @@ export function Hero({
               what to train.
             </span>
           </h1>
-          <p className="text-lg text-zinc-400 mb-8 max-w-lg">
-            A training program built around your position, your goals, and your level — not a generic
-            workout plan.
-          </p>
+          <p className="text-lg text-zinc-400 mb-8 max-w-lg">Your game. Your goals. Your training plan.</p>
 
           <div className="flex flex-col sm:flex-row gap-3 mb-8">
             <Link href="/#pricing" onClick={() => track("start_trial_click", { location: "hero" })}>
@@ -73,7 +81,7 @@ export function Hero({
             </span>
             <span className="h-1 w-1 rounded-full bg-zinc-700" />
             <span>
-              <strong className="text-white font-semibold">3</strong>-week programs
+              <strong className="text-white font-semibold">{positionCount}</strong> positions covered
             </span>
           </div>
           <p className="text-xs text-zinc-500">7 days free. Cancel before the trial ends and you won&apos;t be charged.</p>
@@ -96,12 +104,23 @@ export function Hero({
             <circle cx="360" cy="150" r="5" fill="currentColor" />
           </svg>
 
-          <div className="absolute -bottom-8 -left-6 rotate-[-6deg] hidden sm:block animate-gentle-float">
-            <WeekFocusCard themes={weekThemes} />
-          </div>
-          <div className="relative -rotate-2 animate-gentle-float [animation-delay:-3s]">
-            <PlanPreviewCard session={previewSession} />
-          </div>
+          <Reveal delay={250} className="absolute -top-10 -right-2 hidden sm:block">
+            <div className="rotate-[4deg] animate-gentle-float [animation-delay:-1.5s]">
+              <ProgressPreviewCard completed={progressCompleted} total={progressTotal} />
+            </div>
+          </Reveal>
+
+          <Reveal delay={150} className="absolute -bottom-8 -left-6 hidden sm:block">
+            <div className="rotate-[-6deg] animate-gentle-float">
+              <WeekFocusCard sessionCount={sessionCount} themes={weekThemes} />
+            </div>
+          </Reveal>
+
+          <Reveal delay={50} className="relative">
+            <div className="-rotate-2 animate-gentle-float [animation-delay:-3s]">
+              <PlanPreviewCard session={previewSession} />
+            </div>
+          </Reveal>
         </div>
       </div>
     </section>

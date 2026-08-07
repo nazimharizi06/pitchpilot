@@ -80,9 +80,26 @@ body {
   animation: fade-slide-up 0.6s ease-out both;
 }
 
+/* Very slow "Ken Burns" drift on the hero background photo — the one piece
+   of background motion, deliberately subtle (6% scale over 20s) so it reads
+   as alive rather than distracting. */
+@keyframes hero-pan {
+  0% {
+    transform: scale(1);
+  }
+  100% {
+    transform: scale(1.06);
+  }
+}
+
+.animate-hero-pan {
+  animation: hero-pan 20s ease-in-out infinite alternate;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-gentle-float,
-  .animate-fade-slide-up {
+  .animate-fade-slide-up,
+  .animate-hero-pan {
     animation: none;
   }
 }
