@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/Button";
 import { PlanPreviewCard } from "@/components/landing/PlanPreviewCard";
 import { WeekFocusCard } from "@/components/landing/WeekFocusCard";
 import { ProgressPreviewCard } from "@/components/landing/ProgressPreviewCard";
-import { PitchLines } from "@/components/landing/PitchLines";
 import { HeroBackgroundImage } from "@/components/landing/HeroBackgroundImage";
 import { Reveal } from "@/components/landing/Reveal";
 import type { PlanSession } from "@/lib/types";
@@ -35,8 +34,6 @@ export function Hero({
       <HeroBackgroundImage />
       <div aria-hidden className="absolute inset-0 bg-gradient-to-r from-zinc-950 via-zinc-950/60 to-transparent" />
       <div aria-hidden className="absolute inset-0 bg-gradient-to-b from-zinc-950/70 via-transparent to-zinc-950" />
-      <PitchLines className="absolute inset-0 h-full w-full text-emerald-500/[0.07]" />
-      <div aria-hidden className="absolute inset-0 bg-dot-grid text-white/[0.03]" />
       <div
         aria-hidden
         className="absolute -top-40 left-1/2 -translate-x-1/2 h-[36rem] w-[64rem] rounded-full bg-emerald-500/20 blur-3xl"
