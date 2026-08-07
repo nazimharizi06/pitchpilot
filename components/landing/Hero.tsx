@@ -44,7 +44,49 @@ export function Hero({
       />
       <div aria-hidden className="absolute top-20 right-0 h-72 w-72 rounded-full bg-sky-500/5 blur-3xl" />
 
-      <div className="relative max-w-6xl mx-auto px-6 pt-24 pb-28 grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+      {/* MOBILE — a deliberately different composition, not the desktop
+          layout compressed. Tight top-to-bottom flow (headline → short
+          subhead → one dominant CTA → a link-style secondary action → a
+          one-line stat proof → a small disclaimer), then the workout card is
+          pushed to the bottom of a ~100svh box via mt-auto, so its top edge
+          lands right around the fold — visible without owning the screen. */}
+      <div className="relative md:hidden flex flex-col min-h-[100svh] px-6 pt-24 pb-8">
+        <h1 className="text-[clamp(2.5rem,1.1rem+8vw,3.5rem)] font-semibold tracking-tight text-white mb-3 text-balance leading-[1.05]">
+          Stop guessing{" "}
+          <span className="bg-gradient-to-r from-emerald-400 to-emerald-300 bg-clip-text text-transparent">
+            what to train.
+          </span>
+        </h1>
+        <p className="text-base text-zinc-300 mb-5 max-w-xs">Your game. Your goals. Your training plan.</p>
+
+        <div className="flex flex-col items-start gap-2.5 mb-5">
+          <Link href="/intake" className="w-full" onClick={() => track("start_trial_click", { location: "hero_mobile" })}>
+            <Button className="w-full text-base px-6 py-3 gap-2">
+              Start Free for 7 Days
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </Link>
+          <a href="#how-it-works" className="text-sm text-zinc-400 underline underline-offset-2 hover:text-white transition-colors">
+            See how it works
+          </a>
+        </div>
+
+        <p className="text-sm text-zinc-300 mb-1.5">
+          <strong className="text-white font-semibold">{categoryCount}</strong> categories{" "}
+          <span className="text-zinc-600">·</span> <strong className="text-white font-semibold">{drillCount}</strong> drills{" "}
+          <span className="text-zinc-600">·</span> <strong className="text-white font-semibold">{positionCount}</strong> positions
+        </p>
+        <p className="text-[11px] text-zinc-500 mb-2">7 days free. Cancel before the trial ends and you won&apos;t be charged.</p>
+
+        <div className="mt-auto pt-6">
+          <Reveal>
+            <PlanPreviewCard session={previewSession} compact />
+          </Reveal>
+        </div>
+      </div>
+
+      {/* TABLET / DESKTOP — unchanged composition from the previous pass. */}
+      <div className="relative hidden md:grid max-w-6xl mx-auto px-6 pt-24 pb-28 md:grid-cols-2 gap-12 items-center">
         <div>
           <h1 className="text-[clamp(2.75rem,1.5rem+5vw,4.5rem)] font-semibold tracking-tight text-white mb-6 text-balance leading-[1.05]">
             Stop guessing{" "}

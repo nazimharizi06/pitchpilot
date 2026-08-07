@@ -47,6 +47,13 @@ export function HeroBackgroundImage() {
   const bothFailed = mobileFailed && desktopFailed;
   if ((isMobile && bothFailed) || (!isMobile && desktopFailed)) return null;
 
+  // object-position: 75% horizontal keeps the player biased right / text-side
+  // dark on every breakpoint. The mobile fallback (desktop photo, landscape,
+  // cover-cropped into a portrait box) is height-constrained in that case —
+  // cover scales to fill the taller dimension first, so the full image height
+  // already shows and only horizontal position meaningfully matters; once a
+  // real portrait-shot mobile asset exists, its vertical anchor (25%, biased
+  // toward the upper frame for face/ball visibility) will matter for real.
   return (
     <div aria-hidden className="absolute inset-0 overflow-hidden">
       <Image
@@ -57,7 +64,7 @@ export function HeroBackgroundImage() {
         priority
         quality={useMobileAsset ? 75 : 80}
         sizes="100vw"
-        className={`object-cover animate-hero-pan ${useMobileAsset ? "object-[80%_15%]" : "object-[75%_center]"}`}
+        className={`object-cover animate-hero-pan ${useMobileAsset ? "object-[75%_25%]" : "object-[75%_center]"}`}
         onError={() => (useMobileAsset ? setMobileFailed(true) : setDesktopFailed(true))}
       />
     </div>
