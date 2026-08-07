@@ -14,6 +14,9 @@ import { AvailabilityStep } from "@/components/intake/AvailabilityStep";
 import { SafetyStep } from "@/components/intake/SafetyStep";
 import { Button } from "@/components/ui/Button";
 import { PlanGeneratingScreen } from "@/components/dashboard/PlanGeneratingScreen";
+import { LoadingScreen } from "@/components/dashboard/LoadingScreen";
+import { AnonymousPlanTeaser } from "@/components/intake/AnonymousPlanTeaser";
+import { SaveYourPlanPrompt } from "@/components/intake/SaveYourPlanPrompt";
 import { profileSchema, goalsStepSchema, availabilityStepSchema } from "@/lib/validation";
 import { saveIntakeDraft, loadIntakeDraft, clearIntakeDraft } from "@/lib/intakeDraft";
 import type { GoalsAndAssessment, IntakeData } from "@/lib/types";
@@ -56,6 +59,14 @@ const initialGoals: GoalsAndAssessment = {
 
 const STEP_EVENTS = ["onboarding_profile_completed", "onboarding_goals_completed", "onboarding_setup_completed"] as const;
 
+type Teaser = { dayCount: number; focusAreas: string[] };
+// "wizard": the 4-step form. "generating"/"claiming": full-screen states for
+// the adult path (already-authenticated or anonymous). "teaser"/"signin":
+// the anonymous pre-auth moments. Minors never enter any of these — see
+// handleSubmit's isMinorPlayer branch, which is unchanged from before this
+// pass and just toggles the local `submitting` flag on the wizard screen.
+type Phase = "wizard" | "generating" | "teaser" | "signin" | "claiming";
+
 export default function IntakePage() {
   const router = useRouter();
   // Restored synchronously via lazy initializers (not an effect — sessionStorage
@@ -72,7 +83,9 @@ export default function IntakePage() {
   const [guardianName, setGuardianName] = useState<string | null>(() => initialDraft?.guardianName ?? null);
   const [guardianEmail, setGuardianEmail] = useState<string | null>(() => initialDraft?.guardianEmail ?? null);
   const [error, setError] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
+  const [submitting, setSubmitting] = useState(false); // minor path only — see Phase note above
+  const [phase, setPhase] = useState<Phase>("wizard");
+  const [teaser, setTeaser] = useState<Teaser | null>(null);
   const startedTracked = useRef(false);
 
   const isMinorPlayer = profile.account_type === "player" && profile.age < 18;
@@ -82,9 +95,71 @@ export default function IntakePage() {
     if (val) track("onboarding_waiver_accepted", {});
   }
 
-  // If the restored draft was marked ready-to-submit (they'd already clicked
-  // "Build My Plan" before signing in) and a session now exists, submit
-  // immediately — no second click needed on return from /login or Google.
+  function currentIntake(): IntakeData {
+    return {
+      profile: { id: crypto.randomUUID(), ...profile },
+      goalsAndAssessment,
+      waiverAccepted,
+      guardianName,
+      guardianEmail,
+    };
+  }
+
+  // A plan generated anonymously (before this visitor signed in) is never
+  // regenerated — this only ever copies what already exists in
+  // `pending_plans` onto the now-authenticated account. See
+  // app/api/claim-pending-plan/route.ts.
+  async function claimAndRedirect() {
+    setPhase("claiming");
+    setError(null);
+    try {
+      const res = await fetch("/api/claim-pending-plan", { method: "POST" });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        if (body.error === "expired" || body.error === "no_pending_plan") {
+          setError("Your preview expired. Let's rebuild it from your answers — nothing else to re-enter.");
+          setPhase("wizard");
+          setStep(STEPS.length - 1);
+          return;
+        }
+        throw new Error(body.error ?? "Something went wrong. Please try again.");
+      }
+      clearIntakeDraft();
+      track("intake_completed", { isMinorPlayer: false });
+      router.push("/plan?reveal=1");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+      setPhase(teaser ? "teaser" : "wizard");
+    }
+  }
+
+  // On mount: is there a plan already generated for this browser (an
+  // httpOnly cookie set by /api/generate-plan-anonymous)? The client never
+  // reads the cookie itself — this just asks the server. Covers both "just
+  // came back from Google" and "refreshed the plan-ready screen."
+  useEffect(() => {
+    (async () => {
+      const res = await fetch("/api/pending-plan-teaser");
+      const data = await res.json().catch(() => ({ pending: false }));
+      if (!data.pending) return;
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user) {
+        await claimAndRedirect();
+      } else {
+        setTeaser({ dayCount: data.dayCount, focusAreas: data.focusAreas });
+        setPhase("teaser");
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // If a MINOR's draft was restored ready-to-submit (they'd already clicked
+  // the button before signing in) and a session now exists, submit
+  // immediately — no second click. Unchanged from the previous pass; adults
+  // no longer use this path (see handleSubmit).
   useEffect(() => {
     if (!initialDraft?.readyToSubmit) return;
     (async () => {
@@ -100,12 +175,14 @@ export default function IntakePage() {
         guardianName: initialDraft.guardianName,
         guardianEmail: initialDraft.guardianEmail,
       };
-      submitIntake(intake);
+      submitIntakeAuthenticated(intake);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Persist the draft whenever it changes.
+  // Persist the draft after every change. Kept through the whole anonymous
+  // flow (not cleared until claimAndRedirect succeeds) so an expired preview
+  // can rebuild from it without re-asking the questionnaire.
   useEffect(() => {
     saveIntakeDraft({
       step,
@@ -145,8 +222,13 @@ export default function IntakePage() {
     setStep((s) => Math.max(s - 1, 0));
   }
 
-  async function submitIntake(intake: IntakeData) {
-    setSubmitting(true);
+  // The existing authenticated path — used for minors (after their own auth
+  // check below) and for adults who are already signed in when they click
+  // "Build My Plan". Unchanged behavior from the previous pass.
+  async function submitIntakeAuthenticated(intake: IntakeData) {
+    const isMinor = intake.profile.account_type === "player" && intake.profile.age < 18;
+    if (isMinor) setSubmitting(true);
+    else setPhase("generating");
     setError(null);
     track("plan_generation_started", {});
     try {
@@ -157,10 +239,8 @@ export default function IntakePage() {
       });
 
       if (res.status === 401) {
-        // Shouldn't happen on the auto-resume path (auth was just confirmed),
-        // but a session can still expire between the check and the request.
-        // Submission only ever happens from the last step, so that's always
-        // the right place to resume — no risk of a stale `step` closure here.
+        // A session can expire between the check in handleSubmit and this
+        // request. Submission only ever happens from the last step.
         saveIntakeDraft({
           step: STEPS.length - 1,
           profile: intake.profile,
@@ -177,20 +257,42 @@ export default function IntakePage() {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error ?? "Couldn't build your plan right now. Your answers are saved — try again.");
       }
-      const isMinor = intake.profile.account_type === "player" && intake.profile.age < 18;
       track("intake_completed", { isMinorPlayer: isMinor });
       track("plan_generation_completed", {});
       clearIntakeDraft();
-      if (isMinor) {
-        // Guardian-consent path: no plan yet, nothing to reveal — /plan shows
-        // the "waiting on your guardian" screen instead.
-        router.push("/plan");
-      } else {
-        router.push("/plan?reveal=1");
-      }
+      router.push(isMinor ? "/plan" : "/plan?reveal=1");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong. Your answers are saved — try again.");
       setSubmitting(false);
+      setPhase("wizard");
+    }
+  }
+
+  // The new path: real generation, but no account required yet. Only
+  // reachable for non-minor players — see handleSubmit.
+  async function submitIntakeAnonymous(intake: IntakeData) {
+    setPhase("generating");
+    setError(null);
+    track("plan_generation_started", {});
+    try {
+      const res = await fetch("/api/generate-plan-anonymous", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(intake),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error ?? "Couldn't build your plan right now. Your answers are saved — try again.");
+      }
+      const data = (await res.json()) as Teaser;
+      track("plan_generation_completed", {});
+      // Deliberately NOT clearing the draft here — it's the fallback if the
+      // pending plan expires before the visitor signs in.
+      setTeaser(data);
+      setPhase("teaser");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong. Your answers are saved — try again.");
+      setPhase("wizard");
     }
   }
 
@@ -209,40 +311,53 @@ export default function IntakePage() {
       return;
     }
 
+    const intake = currentIntake();
+
+    if (isMinorPlayer) {
+      // Unchanged: a minor's waiver needs a guardian to confirm it, which
+      // needs a real account to attach to — auth still comes first here.
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
+        saveIntakeDraft({ step, profile, goalsAndAssessment, waiverAccepted, guardianName, guardianEmail, readyToSubmit: true });
+        router.push("/login?next=/intake");
+        return;
+      }
+      await submitIntakeAuthenticated(intake);
+      return;
+    }
+
     const supabase = createClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
-
-    if (!user) {
-      saveIntakeDraft({
-        step,
-        profile,
-        goalsAndAssessment,
-        waiverAccepted,
-        guardianName,
-        guardianEmail,
-        readyToSubmit: true,
-      });
-      router.push("/login?next=/intake");
-      return;
+    if (user) {
+      await submitIntakeAuthenticated(intake);
+    } else {
+      await submitIntakeAnonymous(intake);
     }
-
-    const intake: IntakeData = {
-      profile: { id: crypto.randomUUID(), ...profile },
-      goalsAndAssessment,
-      waiverAccepted,
-      guardianName,
-      guardianEmail,
-    };
-    await submitIntake(intake);
   }
 
-  // Real AI generation only happens for the non-minor path (the minor path just
-  // sends a quick guardian-consent email, not a "crafting your plan" wait).
-  if (submitting && !isMinorPlayer) {
-    return <PlanGeneratingScreen />;
+  async function handleSeePlan() {
+    const supabase = createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (user) {
+      await claimAndRedirect();
+    } else {
+      setPhase("signin");
+    }
   }
+
+  if (phase === "generating") return <PlanGeneratingScreen />;
+  if (phase === "claiming") return <LoadingScreen message="Saving your plan..." />;
+  if (phase === "teaser" && teaser) {
+    return <AnonymousPlanTeaser dayCount={teaser.dayCount} focusAreas={teaser.focusAreas} onSeePlan={handleSeePlan} />;
+  }
+  if (phase === "signin") return <SaveYourPlanPrompt onError={setError} />;
 
   const copy = STEP_COPY[step];
   const tip = TIPS[step];
@@ -323,9 +438,7 @@ export default function IntakePage() {
               ) : (
                 <Button onClick={handleSubmit} disabled={submitting}>
                   {submitting
-                    ? isMinorPlayer
-                      ? "Sending..."
-                      : "Building..."
+                    ? "Sending..."
                     : isMinorPlayer
                       ? "Send for guardian confirmation"
                       : "Build My Plan"}

@@ -130,3 +130,28 @@ create table public.profiles (
 alter table public.profiles enable row level security;
 create policy "Users manage their own profile" on public.profiles
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- Full generated plan, held only until an anonymous visitor authenticates and
+-- claims it (see app/api/generate-plan-anonymous/route.ts and
+-- app/api/claim-pending-plan/route.ts). No RLS policies at all — service-role
+-- only, same posture as guardian_verifications/trial_usage — the browser
+-- client (anon key) can never read this table under any circumstance.
+create table public.pending_plans (
+  token uuid primary key default gen_random_uuid(),
+  intake jsonb not null,
+  plan jsonb not null,
+  created_at timestamptz not null default now(),
+  expires_at timestamptz not null default (now() + interval '24 hours')
+);
+alter table public.pending_plans enable row level security;
+
+-- IP-based throttle for the one endpoint that runs real AI generation with no
+-- authentication (generate-plan-anonymous). Service-role only, no policies —
+-- same posture as trial_usage.
+create table public.anon_generation_log (
+  id uuid primary key default gen_random_uuid(),
+  ip text not null,
+  created_at timestamptz not null default now()
+);
+alter table public.anon_generation_log enable row level security;
+create index anon_generation_log_ip_idx on public.anon_generation_log (ip, created_at);
