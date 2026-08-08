@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { track } from "@vercel/analytics";
+import { track } from "@/lib/analytics";
 import { Check } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { ComparisonTable } from "@/components/landing/ComparisonTable";

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
-import { track } from "@vercel/analytics/server";
+import { trackServer } from "@/lib/analyticsServer";
 import { getStripe } from "@/lib/stripe/client";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { SubscriptionTier } from "@/lib/subscriptions";
@@ -96,7 +96,14 @@ export async function POST(request: Request) {
         }
 
         const priceId = subscription.items.data[0]?.price.id;
-        await track("checkout_completed", { tier: (priceId && TIER_BY_PRICE[priceId]) ?? "unknown" });
+        const tier = (priceId && TIER_BY_PRICE[priceId]) ?? "unknown";
+        await trackServer(userId, "checkout_completed", { tier });
+        // Distinct from checkout_completed — every checkout fires that one,
+        // trial or not; this fires only when Stripe actually granted a trial
+        // (subscription_data.trial_period_days in app/api/checkout/route.ts).
+        if (subscription.status === "trialing") {
+          await trackServer(userId, "trial_started", { tier });
+        }
       }
       break;
     }
@@ -105,8 +112,32 @@ export async function POST(request: Request) {
       const subscription = event.data.object as Stripe.Subscription;
       const customerId = typeof subscription.customer === "string" ? subscription.customer : subscription.customer.id;
       await upsertFromSubscription(admin, null, customerId, subscription);
-      if (event.type === "customer.subscription.deleted") {
-        await track("subscription_canceled", {});
+
+      // Neither event carries a Supabase user_id directly (only later lifecycle
+      // events, keyed by subscription/customer id) — look it up from the row
+      // this webhook itself created during checkout.session.completed, purely
+      // for attributing these two analytics events to the right person.
+      const { data: subRow } = await admin
+        .from("subscriptions")
+        .select("user_id")
+        .eq("stripe_subscription_id", subscription.id)
+        .maybeSingle();
+
+      if (subRow?.user_id) {
+        if (event.type === "customer.subscription.deleted") {
+          await trackServer(subRow.user_id, "subscription_canceled", {});
+        } else {
+          // trial -> active is the one specific transition that counts as a
+          // real conversion — Stripe includes previous_attributes on update
+          // events specifically to make this kind of diff possible.
+          const previousAttributes = event.data.previous_attributes as Partial<Stripe.Subscription> | undefined;
+          if (previousAttributes?.status === "trialing" && subscription.status === "active") {
+            const priceId = subscription.items.data[0]?.price.id;
+            await trackServer(subRow.user_id, "trial_converted", {
+              tier: (priceId && TIER_BY_PRICE[priceId]) ?? "unknown",
+            });
+          }
+        }
       }
       break;
     }

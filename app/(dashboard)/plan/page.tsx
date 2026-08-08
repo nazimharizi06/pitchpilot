@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { track } from "@vercel/analytics";
+import { track } from "@/lib/analytics";
 import { CalendarDays, Flame, Target, Clock, ListChecks } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { getActiveSubscription } from "@/lib/subscriptions";
@@ -98,7 +98,14 @@ export default function MyPlanPage() {
           subscription = await getActiveSubscription(supabase, user.id);
         }
         setHasActiveSubscription(Boolean(subscription));
-        if (!subscription) track("plan_preview_viewed", {});
+        // Guarded by sessionStorage (not just a ref/effect-run check) so a hard
+        // refresh mid-session doesn't re-fire this — same dedup pattern as
+        // lib/intakeDraft.ts's draft persistence.
+        const viewedKey = "pitchpilot:plan_viewed_fired";
+        if (!window.sessionStorage.getItem(viewedKey)) {
+          window.sessionStorage.setItem(viewedKey, "1");
+          track("plan_viewed", { subscribed: Boolean(subscription) });
+        }
         setState(loadedState);
         setLoaded(true);
         return;
@@ -146,6 +153,19 @@ export default function MyPlanPage() {
     })();
   }, [router]);
 
+  // "Opened" a workout — fires once per distinct active day per page load
+  // (sessionStorage-guarded, same reasoning as plan_viewed above), only once
+  // the full unlocked view is actually what's about to render.
+  const openActiveDay = state?.plan.sessions.find((s) => !state.progress.find((p) => p.day === s.day)?.completed_at);
+  useEffect(() => {
+    if (!loaded || !hasActiveSubscription || showReveal || !openActiveDay) return;
+    const key = `pitchpilot:workout_opened:${openActiveDay.day}`;
+    if (window.sessionStorage.getItem(key)) return;
+    window.sessionStorage.setItem(key, "1");
+    track("workout_opened", { day: openActiveDay.day, theme: openActiveDay.theme });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loaded, hasActiveSubscription, showReveal, openActiveDay?.day]);
+
   async function handleToggleDrill(day: number, drillId: string) {
     if (!state) return;
     const isFirstEver = state.progress.every((p) => p.completed_drill_ids.length === 0 && !p.completed_at);
@@ -175,6 +195,7 @@ export default function MyPlanPage() {
     const allDrillIds = session.drills.map((d) => d.drillId);
     await markSessionComplete(supabase, user.id, day, allDrillIds);
     if (isFirstEver) track("first_session_completed", {});
+    track("workout_completed", { day, theme: session.theme });
     const nowIso = new Date().toISOString();
     setState({
       ...state,

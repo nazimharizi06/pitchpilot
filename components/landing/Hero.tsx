@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { track } from "@vercel/analytics";
+import { track } from "@/lib/analytics";
 import { ArrowRight, PlayCircle } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { PlanPreviewCard } from "@/components/landing/PlanPreviewCard";

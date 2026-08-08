@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { track } from "@vercel/analytics";
+import { track } from "@/lib/analytics";
 import { Sparkles, Repeat2, ShieldCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Header } from "@/components/landing/Header";
@@ -193,8 +193,12 @@ export default function IntakePage() {
       guardianEmail,
       readyToSubmit: false,
     });
-    if (!startedTracked.current) {
+    // sessionStorage (not just the ref above) so a hard refresh mid-wizard
+    // doesn't re-fire this — the ref alone only survives re-renders, not a
+    // real reload.
+    if (!startedTracked.current && !window.sessionStorage.getItem("pitchpilot:onboarding_started_fired")) {
       startedTracked.current = true;
+      window.sessionStorage.setItem("pitchpilot:onboarding_started_fired", "1");
       track("onboarding_started", {});
     }
   }, [step, profile, goalsAndAssessment, waiverAccepted, guardianName, guardianEmail]);
