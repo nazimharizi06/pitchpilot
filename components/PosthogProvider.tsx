@@ -43,16 +43,23 @@ export function PosthogProvider() {
     const supabase = createClient();
 
     // Supabase user ID only, as the distinct ID — no email/name/other
-    // properties ever passed to identify().
+    // properties ever passed to identify(). Skipping the call entirely when
+    // PostHog's distinct ID already matches avoids re-sending an $identify
+    // event (and its person-profile update) on every mount/auth-state tick
+    // once a session is already established.
     supabase.auth.getUser().then(({ data }) => {
-      if (data.user) posthog.identify(data.user.id);
+      if (data.user && posthog.get_distinct_id() !== data.user.id) {
+        posthog.identify(data.user.id);
+      }
     });
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "SIGNED_IN" && session?.user) {
-        posthog.identify(session.user.id);
+        if (posthog.get_distinct_id() !== session.user.id) {
+          posthog.identify(session.user.id);
+        }
       }
       if (event === "SIGNED_OUT") {
         posthog.reset();

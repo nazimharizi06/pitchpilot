@@ -125,7 +125,11 @@ export default function IntakePage() {
         throw new Error(body.error ?? "Something went wrong. Please try again.");
       }
       clearIntakeDraft();
-      track("intake_completed", { isMinorPlayer: false });
+      // intake_completed fires in submitIntakeAnonymous, the real completion
+      // point for this path — claimAndRedirect only ever runs after that
+      // already happened, so firing it again here would double-count the
+      // same intake. plan_claimed marks this distinct later step instead.
+      track("plan_claimed", {});
       router.push("/plan?reveal=1");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
@@ -289,6 +293,7 @@ export default function IntakePage() {
         throw new Error(body.error ?? "Couldn't build your plan right now. Your answers are saved — try again.");
       }
       const data = (await res.json()) as Teaser;
+      track("intake_completed", { isMinorPlayer: false });
       track("plan_generation_completed", {});
       // Deliberately NOT clearing the draft here — it's the fallback if the
       // pending plan expires before the visitor signs in.
