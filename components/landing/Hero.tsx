@@ -59,24 +59,24 @@ export function Hero({
         </h1>
         <p className="text-base text-zinc-300 mb-5 max-w-xs">Your game. Your goals. Your training plan.</p>
 
-        <div className="flex flex-col items-start gap-2.5 mb-5">
-          <Link href="/intake" className="w-full" onClick={() => track("start_trial_click", { location: "hero_mobile" })}>
+        <div className="flex flex-col items-start gap-2 mb-4">
+          <Link href="/intake" className="w-full" onClick={() => track("build_plan_click", { location: "hero_mobile" })}>
             <Button className="w-full text-base px-6 py-3 gap-2">
-              Start Free for 7 Days
+              Build My Free Plan
               <ArrowRight className="h-4 w-4" />
             </Button>
           </Link>
+          <p className="text-xs text-zinc-500">No account needed to see your personalized preview.</p>
           <a href="#how-it-works" className="text-sm text-zinc-400 underline underline-offset-2 hover:text-white transition-colors">
             See how it works
           </a>
         </div>
 
-        <p className="text-sm text-zinc-300 mb-1.5">
+        <p className="text-sm text-zinc-300 mb-2">
           <strong className="text-white font-semibold">{categoryCount}</strong> categories{" "}
           <span className="text-zinc-600">·</span> <strong className="text-white font-semibold">{drillCount}</strong> drills{" "}
           <span className="text-zinc-600">·</span> <strong className="text-white font-semibold">{positionCount}</strong> positions
         </p>
-        <p className="text-[11px] text-zinc-500 mb-2">7 days free. Cancel before the trial ends and you won&apos;t be charged.</p>
 
         <div className="mt-auto pt-6">
           <Reveal>
@@ -96,10 +96,10 @@ export function Hero({
           </h1>
           <p className="text-lg text-zinc-300 mb-8 max-w-lg">Your game. Your goals. Your training plan.</p>
 
-          <div className="flex flex-col sm:flex-row gap-3 mb-8">
-            <Link href="/intake" onClick={() => track("start_trial_click", { location: "hero" })}>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-3">
+            <Link href="/intake" onClick={() => track("build_plan_click", { location: "hero" })}>
               <Button className="w-full sm:w-auto text-base px-6 py-3 gap-2">
-                Start Free for 7 Days
+                Build My Free Plan
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </Link>
@@ -113,8 +113,9 @@ export function Hero({
               </Button>
             </a>
           </div>
+          <p className="text-xs text-zinc-500 mb-6">No account needed to see your personalized preview.</p>
 
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-zinc-400 mb-3">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-zinc-400">
             <span>
               <strong className="text-white font-semibold">{categoryCount}</strong> training categories
             </span>
@@ -127,7 +128,6 @@ export function Hero({
               <strong className="text-white font-semibold">{positionCount}</strong> positions covered
             </span>
           </div>
-          <p className="text-xs text-zinc-400">7 days free. Cancel before the trial ends and you won&apos;t be charged.</p>
         </div>
 
         <div className="relative flex justify-center md:justify-end">

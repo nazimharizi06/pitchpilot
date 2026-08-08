@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
+import { track } from "@/lib/analytics";
 import { Button } from "@/components/ui/Button";
 import { UserMenu } from "@/components/auth/UserMenu";
 
@@ -56,10 +57,10 @@ export function Header({ dark = false }: { dark?: boolean }) {
           <div className="hidden lg:block">
             <UserMenu dark={dark} />
           </div>
-          <Link href="/intake">
+          <Link href="/intake" onClick={() => track("build_plan_click", { location: "header" })}>
             <Button className="text-sm px-4 py-2 whitespace-nowrap">
-              <span className="hidden sm:inline">Start Free for 7 Days</span>
-              <span className="sm:hidden">Start Free</span>
+              <span className="hidden sm:inline">Build My Free Plan</span>
+              <span className="sm:hidden">Build My Plan</span>
             </Button>
           </Link>
           <button

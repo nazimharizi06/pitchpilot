@@ -2,17 +2,20 @@ import Image from "next/image";
 
 export function FounderSection() {
   return (
-    <section className="bg-zinc-950 px-6 py-24">
+    <section className="bg-zinc-950 px-6 py-12 md:py-20">
       <div className="max-w-2xl mx-auto text-center">
-        <p className="text-sm font-medium text-emerald-400 mb-6">Meet the Founder</p>
+        <p className="text-sm font-medium text-emerald-400 mb-2">Meet the founder</p>
+        <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight text-white mb-5">
+          Built by a player, for players.
+        </h2>
         <Image
           src="/brand/founder-photo.webp"
           alt="Nazim Harizi, PitchPilot founder"
-          width={112}
-          height={112}
-          className="rounded-full object-cover mx-auto mb-6 h-28 w-28"
+          width={96}
+          height={96}
+          className="rounded-full object-cover mx-auto mb-5 h-24 w-24"
         />
-        <p className="text-lg text-zinc-300 mb-6">
+        <p className="text-base sm:text-lg text-zinc-300 mb-4">
           &ldquo;I saw too many players training without knowing what to actually work on. PitchPilot is the
           plan I wish I&apos;d had.&rdquo;
         </p>

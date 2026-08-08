@@ -1,38 +1,48 @@
 import { SKILL_CATEGORIES, SKILL_CATEGORY_LABELS } from "@/lib/types";
-import { SKILL_ICONS as ICONS, SKILL_BLURBS as BLURBS, SKILL_GRADIENTS as GRADIENTS, SKILL_ICON_COLORS as ICON_COLORS } from "@/lib/skillMeta";
+import type { SkillCategory } from "@/lib/types";
+import { SKILL_ICONS as ICONS, SKILL_ICON_COLORS as ICON_COLORS } from "@/lib/skillMeta";
+import { drills } from "@/lib/data/drills";
+import { POSITIONS } from "@/lib/types";
 import { Reveal } from "@/components/landing/Reveal";
+
+// A representative subset, not every category — the full library speaks for
+// itself inside the product. This is a compact proof-of-depth, not a catalog.
+const FEATURED: SkillCategory[] = ["shooting", "passing", "dribbling", "speed_agility", "defending"];
+const moreCount = SKILL_CATEGORIES.length - FEATURED.length;
 
 export function GoalsGrid() {
   return (
-    <section id="goals" className="bg-zinc-950 px-6 py-24">
-      <div className="max-w-6xl mx-auto">
-        <Reveal className="text-center mb-12">
+    <section id="goals" className="bg-zinc-950 px-6 py-12 md:py-20">
+      <div className="max-w-3xl mx-auto text-center">
+        <Reveal>
           <p className="text-sm font-medium text-emerald-400 mb-2">Training areas</p>
-          <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight text-white">
+          <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight text-white mb-2">
             Every part of the game, covered
           </h2>
+          <p className="text-sm text-zinc-400 mb-6">
+            {SKILL_CATEGORIES.length} training areas · {drills.length} drills · {POSITIONS.length} positions
+          </p>
         </Reveal>
-      </div>
-
-      <Reveal delay={100} className="scroll-fade-x">
-        <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory px-6 pb-4 max-w-6xl mx-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {SKILL_CATEGORIES.map((goal) => {
+        <Reveal delay={80} className="flex flex-wrap items-center justify-center gap-2.5">
+          {FEATURED.map((goal) => {
             const Icon = ICONS[goal];
             return (
               <div
                 key={goal}
-                className={`snap-start shrink-0 w-56 relative overflow-hidden rounded-2xl border border-zinc-800 p-6 bg-gradient-to-br ${GRADIENTS[goal]} hover:border-zinc-700 hover:-translate-y-0.5 transition-all`}
+                className="flex items-center gap-2 rounded-full border border-zinc-800 bg-zinc-900/60 pl-2.5 pr-4 py-2"
               >
-                <div className={`h-11 w-11 rounded-xl bg-zinc-950 border border-zinc-800 ${ICON_COLORS[goal]} flex items-center justify-center mb-4`}>
-                  <Icon className="h-5 w-5" />
-                </div>
-                <h3 className="font-semibold text-sm text-white mb-1">{SKILL_CATEGORY_LABELS[goal]}</h3>
-                <p className="text-xs text-zinc-400">{BLURBS[goal]}</p>
+                <span className={`h-6 w-6 rounded-full bg-zinc-950 border border-zinc-800 flex items-center justify-center shrink-0 ${ICON_COLORS[goal]}`}>
+                  <Icon className="h-3.5 w-3.5" />
+                </span>
+                <span className="text-sm font-medium text-zinc-200">{SKILL_CATEGORY_LABELS[goal]}</span>
               </div>
             );
           })}
-        </div>
-      </Reveal>
+          <div className="flex items-center rounded-full border border-dashed border-zinc-700 px-4 py-2">
+            <span className="text-sm font-medium text-zinc-500">+ {moreCount} more</span>
+          </div>
+        </Reveal>
+      </div>
     </section>
   );
 }

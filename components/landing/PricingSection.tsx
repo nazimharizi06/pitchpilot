@@ -42,14 +42,14 @@ export function PricingSection() {
   }
 
   return (
-    <section id="pricing" className="bg-zinc-950 px-6 py-24">
+    <section id="pricing" className="bg-zinc-950 px-6 py-14 md:py-24">
       <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-14">
+        <div className="text-center mb-8 md:mb-14">
           <p className="text-sm font-medium text-emerald-400 mb-2">Pricing</p>
-          <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight text-white mb-3">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-semibold tracking-tight text-white mb-3">
             Start free. Stay if it&apos;s working.
           </h2>
-          <p className="text-zinc-400 mb-8">7 days free. Cancel before the trial ends and you won&apos;t be charged.</p>
+          <p className="text-zinc-400 mb-6 md:mb-8">7 days free. Cancel before the trial ends and you won&apos;t be charged.</p>
 
           <div className="inline-flex items-center rounded-full border border-zinc-800 bg-zinc-900/60 p-1">
             <button

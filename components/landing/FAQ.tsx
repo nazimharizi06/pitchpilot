@@ -30,11 +30,11 @@ const FAQS = [
 
 export function FAQ() {
   return (
-    <section id="faq" className="bg-zinc-900/30 border-y border-zinc-800 px-6 py-24">
+    <section id="faq" className="bg-zinc-900/30 border-y border-zinc-800 px-6 py-12 md:py-24">
       <div className="max-w-3xl mx-auto">
-        <Reveal className="text-center mb-10">
+        <Reveal className="text-center mb-6 md:mb-10">
           <p className="text-sm font-medium text-emerald-400 mb-2">FAQ</p>
-          <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight text-white">Questions before you start</h2>
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-semibold tracking-tight text-white">Questions before you start</h2>
         </Reveal>
         <div className="flex flex-col gap-3">
           {FAQS.map((item) => (
