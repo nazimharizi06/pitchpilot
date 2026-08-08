@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/Button";
 
 export function CTASection() {
   return (
-    <section className="bg-zinc-950 px-6 py-14 md:py-24">
+    <section className="bg-zinc-950 px-6 py-10 md:py-24">
       <div className="max-w-4xl mx-auto">
         <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-600 to-emerald-800 px-8 py-12 md:py-16 text-center">
           <div aria-hidden className="absolute inset-0 bg-dot-grid text-white/[0.06]" />

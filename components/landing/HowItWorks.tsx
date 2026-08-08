@@ -24,22 +24,22 @@ export function HowItWorks({ previewSession }: { previewSession: PlanSession }) 
           </h2>
         </Reveal>
 
-        <Reveal delay={100} className="grid grid-cols-3 gap-3 sm:gap-4 relative mb-8 md:mb-14">
+        <Reveal delay={100} className="grid grid-cols-3 gap-2.5 sm:gap-4 relative mb-8 md:mb-14">
           <div
             aria-hidden
             className="hidden sm:block absolute top-7 left-[16.5%] right-[16.5%] border-t-2 border-dashed border-emerald-900"
           />
           {STEPS.map((step, i) => (
             <div key={step.title} className="relative flex flex-col items-center text-center gap-2 sm:gap-3">
-              <div className="relative z-10 h-11 w-11 sm:h-14 sm:w-14 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-lg shadow-emerald-600/30">
+              <div className="relative z-10 h-10 w-10 sm:h-14 sm:w-14 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-lg shadow-emerald-600/30">
                 <step.icon className="h-5 w-5 sm:h-6 sm:w-6" />
               </div>
               <div>
-                <p className="text-xs sm:text-sm font-medium text-zinc-200">
+                <p className="text-xs sm:text-sm font-medium text-zinc-200 leading-snug">
                   <span className="text-emerald-400 mr-1">{i + 1}.</span>
                   {step.title}
                 </p>
-                <p className="text-[11px] sm:text-xs text-zinc-500 mt-0.5">{step.body}</p>
+                <p className="text-xs text-zinc-500 mt-1 leading-snug sm:leading-normal">{step.body}</p>
               </div>
             </div>
           ))}

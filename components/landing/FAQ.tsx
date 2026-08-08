@@ -30,7 +30,7 @@ const FAQS = [
 
 export function FAQ() {
   return (
-    <section id="faq" className="bg-zinc-900/30 border-y border-zinc-800 px-6 py-12 md:py-24">
+    <section id="faq" className="bg-zinc-900/30 border-y border-zinc-800 px-6 py-10 md:py-24">
       <div className="max-w-3xl mx-auto">
         <Reveal className="text-center mb-6 md:mb-10">
           <p className="text-sm font-medium text-emerald-400 mb-2">FAQ</p>

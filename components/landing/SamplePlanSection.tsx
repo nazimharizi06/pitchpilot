@@ -28,15 +28,15 @@ export function SamplePlanSection({ sessions: allSessions }: { sessions: PlanSes
           </p>
         </Reveal>
 
-        <Reveal delay={100} className="grid grid-cols-1 lg:grid-cols-5 gap-6 md:gap-8 items-start mb-8">
+        <Reveal delay={100} className="grid grid-cols-1 lg:grid-cols-5 gap-6 md:gap-8 items-start mb-6 md:mb-8">
           <div className="lg:col-span-2 flex flex-col gap-2">
             <p className="text-xs font-semibold tracking-wide text-zinc-500 mb-1 flex items-center gap-2">
               <CalendarDays className="h-3.5 w-3.5" /> 7-DAY SCHEDULE
             </p>
-            {sessions.map((session) => (
+            {sessions.map((session, i) => (
               <div
                 key={session.day}
-                className={`flex items-center justify-between rounded-xl border px-4 py-2.5 ${
+                className={`items-center justify-between rounded-xl border px-4 py-2.5 ${i < 4 ? "flex" : "hidden lg:flex"} ${
                   session.day === featured.day
                     ? "border-emerald-500 bg-emerald-950/20"
                     : "border-zinc-800 bg-zinc-900/40"
@@ -48,6 +48,13 @@ export function SamplePlanSection({ sessions: allSessions }: { sessions: PlanSes
                 <span className="text-xs text-zinc-500 whitespace-nowrap">~{session.target_duration_minutes} min</span>
               </div>
             ))}
+            {/* Presentation only — mobile/tablet see Days 1-4 plus this
+                indicator instead of the full week; desktop (lg+) shows every
+                day via the `hidden lg:flex` rows above. Same sessions array
+                either way, nothing about the sample plan itself changes. */}
+            {sessions.length > 4 && (
+              <p className="lg:hidden text-xs text-zinc-500 text-center py-1">+ {sessions.length - 4} more sessions</p>
+            )}
           </div>
 
           <div className="lg:col-span-3 flex justify-center">
